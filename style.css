@@ -13,7 +13,7 @@ body {
 /* TEST: Testing item for movement */
 .test-cell {
     position: relative;
-    width: 24px;
+    width: 48px;
     height: 24px;
     background-color: black;
 }
@@ -33,6 +33,7 @@ body {
     grid-template-rows: repeat(20, 1fr);
     width: fit-content;
 }
+
 .cell {
     border-top: 1px solid black;
     border-left: 1px solid black;
