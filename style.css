@@ -13,7 +13,16 @@ body {
 /* TEST: Testing item for movement */
 .test-cell {
     position: relative;
-    width: 48px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    width: fit-content;
+    border: 1px solid black;
+}
+
+.filled {
+    position: relative;
+    width: 24px;
     height: 24px;
     background-color: black;
 }
