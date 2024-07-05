@@ -12,6 +12,8 @@ function createEleWithCls(ele, clsArr) {
 // TETRIS BLOCK INFO
 const PX_WIDTH = 24;
 const PX_HEIGHT = 24;
+const PX_COUNT = 9; // Block is 3x3
+const BLOCK_BAG = ["Z", "S", "L"];
 const COL_IDENTIFIERS = {
     1: [0, 3, 6],
     2: [1, 4, 7],
@@ -35,6 +37,82 @@ let collision = {
 
 let testCell = document.querySelector(".test-cell");
 
+function createBoard() {
+    let board = document.querySelector(".board");
+    totalColumn = 10;
+    totalRow = 20;
+    totalCells = totalColumn * totalRow;
+
+    for (let i = 0; i < totalCells; i++) {
+        cell = createEleWithCls("div", ["cell", "cell-" + (i + 1)]);
+        board.appendChild(cell);
+    }
+}
+
+// SECTION: Create randomized block
+function blockTypes() {
+    let blocks = {
+        "Z": [
+           [1, 1, 0,
+            0, 1, 1,
+            0, 0, 0],
+           [0, 0, 1,
+            0, 1, 1,
+            0, 1, 0],
+        ],
+        "S": [
+            [0, 1, 1,
+             1, 1, 0,
+             0, 0, 0],
+            [1, 0, 0,
+             1, 1, 0,
+             0, 1, 0],
+        ],
+        "L": [
+            [0, 1, 0,
+             0, 1, 0,
+             0, 1, 1],
+            [0, 0, 0,
+             1, 1, 1,
+             1, 0, 0],
+            [1, 1, 0,
+             0, 1, 0,
+             0, 1, 0],
+            [0, 0, 1,
+             1, 1, 1,
+             0, 0, 0],
+        ],
+    }
+
+    return blocks
+}
+
+function randomizeBag(bag, totalBlockCount) {
+    val = Math.floor(Math.random() * totalBlockCount);
+    block = bag[val];
+
+    return block
+}
+
+function getBlockType(bag) {
+    block = randomizeBag(bag, bag.length);
+    blockPxInfo = blockTypes()[block];
+
+    return blockPxInfo[0]
+}
+
+function createBlock() {
+    let blockCtnr = document.querySelector(".block");
+    defaultBlock = getBlockType(BLOCK_BAG);
+
+    for (let i = 0; i < defaultBlock.length; i++) {
+        let px = defaultBlock[i] == 0 ? createEleWithCls("div", ["px"]) : createEleWithCls("div", ["px", "filled"]);
+        blockCtnr.appendChild(px);
+    }
+
+    detectCollision(blockCtnr);
+}
+
 function addArrowCtrls() {
     window.addEventListener("keydown", function (e) {
         if (e.key == "ArrowDown" || e.key == "ArrowLeft" || e.key == "ArrowRight" || e.key == "ArrowUp") {
@@ -51,27 +129,29 @@ function addArrowCtrls() {
     })
 }
 
-function gameLoop(e) {
-    if (keyState["ArrowDown"] == true && testCell.offsetTop < collision["bottom"]) {
-        testCell.style.top = `${testCell.offsetTop + PX_HEIGHT}px`;
+function gameLoop() {
+    let block = document.querySelector(".block");
+    
+    if (keyState["ArrowDown"] == true && block.offsetTop < collision["bottom"]) {
+        block.style.top = `${block.offsetTop + PX_HEIGHT}px`;
     }    
-    if (keyState["ArrowLeft"] == true && testCell.offsetLeft > collision["left"]) {
-        testCell.style.left = `${testCell.offsetLeft - PX_WIDTH}px`;
+    if (keyState["ArrowLeft"] == true && block.offsetLeft > collision["left"]) {
+        block.style.left = `${block.offsetLeft - PX_WIDTH}px`;
     }
-    if (keyState["ArrowRight"] == true && testCell.offsetLeft < collision["right"]) {
-        testCell.style.left = `${testCell.offsetLeft + PX_WIDTH}px`;
+    if (keyState["ArrowRight"] == true && block.offsetLeft < collision["right"]) {
+        block.style.left = `${block.offsetLeft + PX_WIDTH}px`;
     }
 
     // TEST USE ONLY
     if (keyState["ArrowUp"] == true) {
-        testCell.style.top = `${testCell.offsetTop - PX_HEIGHT}px`;
+        block.style.top = `${block.offsetTop - PX_HEIGHT}px`;
     }
 
     // Controls speed that block moves
     setTimeout(gameLoop, 30);
 } 
 
-// NOTE: Next 3 funcs below relate to block collision detection
+// SECTION: Block collision detection
 function collisionInfo(direction, axisVal) {
     // Collision values based on block's rotation (aka which col + row is occupied in 3x3 grid of block)
     switch (direction) {
@@ -102,34 +182,23 @@ function processCollision(block, axis, axisIdentifer, axisValArr, direction) {
     }
 }
 
-function detectCollision() {
+function detectCollision(block) {
     // Check which cols + rows is occupied in block's 3x3 grid
     let cols = {1: false, 2: false, 3: false}
     let rows = {1: false, 2: false, 3: false}
 
-    processCollision(testCell, cols, COL_IDENTIFIERS, [3, 2], "right");
-    processCollision(testCell, cols, COL_IDENTIFIERS, [1, 2], "left");
-    processCollision(testCell, rows, ROW_IDENTIFIERS, [3, 2], "bottom");
-}
-
-
-function createBoard() {
-    let board = document.querySelector(".board");
-    totalColumn = 10;
-    totalRow = 20;
-    totalCells = totalColumn * totalRow;
-
-    for (let i = 0; i < totalCells; i++) {
-        cell = createEleWithCls("div", ["cell", "cell-" + (i + 1)]);
-        board.appendChild(cell);
-    }
+    processCollision(block, cols, COL_IDENTIFIERS, [3, 2], "right");
+    processCollision(block, cols, COL_IDENTIFIERS, [1, 2], "left");
+    processCollision(block, rows, ROW_IDENTIFIERS, [3, 2], "bottom");
 }
 
 function main() {
     createBoard();
     addArrowCtrls();
     gameLoop();
-    detectCollision();
+
+    // These need to reused inside other functions, but is here as test
+    createBlock();
 }
 
 main();

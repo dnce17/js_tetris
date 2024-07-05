@@ -10,8 +10,14 @@ body {
     margin: 0;
 }
 
-/* TEST: Testing item for movement */
-.test-cell {
+.center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%)
+}
+
+.block {
     position: relative;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -25,14 +31,6 @@ body {
     width: 24px;
     height: 24px;
     background-color: black;
-}
-/*  */
-
-.center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%)
 }
 
 /* Create board */
