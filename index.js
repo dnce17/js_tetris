@@ -27,10 +27,11 @@ const ROW_IDENTIFIERS = {
 let keyState = {
     "ArrowDown": null,
     "ArrowLeft": null,
-    "ArrowRight": null
+    "ArrowRight": null,
+    " ": null
 };
 let collision = {
-    "bottom": 480,
+    "bottom": 408,
     "left": 0,
     "right": 216 - (PX_WIDTH * 2)
 };
@@ -103,6 +104,13 @@ function getBlockType(bag) {
 
 function createBlock() {
     let blockCtnr = document.querySelector(".block");
+
+    if (!blockCtnr) {
+        let tetrisGame = document.querySelector(".tetris-game");
+        blockCtnr = createEleWithCls("div", ["block"]);
+        tetrisGame.prepend(blockCtnr);
+    }
+
     defaultBlock = getBlockType(BLOCK_BAG);
 
     for (let i = 0; i < defaultBlock.length; i++) {
@@ -113,18 +121,30 @@ function createBlock() {
     detectCollision(blockCtnr);
 }
 
-function addArrowCtrls() {
+// SECTION: game controls
+function addDropCtrl(block) {
+    if (keyState[" "] == true) {
+        setBlock(block);
+        createBlock();
+    }
+}
+
+function addCtrls() {
     window.addEventListener("keydown", function (e) {
-        if (e.key == "ArrowDown" || e.key == "ArrowLeft" || e.key == "ArrowRight" || e.key == "ArrowUp") {
+        if (e.key == "ArrowDown" || e.key == "ArrowLeft" || e.key == "ArrowRight" || e.key == "ArrowUp" || e.key == " ") {
             keyState[e.key] = true;
-            console.log(`keydown: ${keyState[e.key]}`);
+            console.log(`keydown: ${e.key}, ${keyState[e.key]}`);
+
+            // Not added to game loop b/c cause multiple new blocks to form instead of 1
+            let block = document.querySelector(".block");
+            addDropCtrl(block);
         }
     }); 
 
     window.addEventListener("keyup", function(e) {
-        if (e.key == "ArrowDown" || e.key == "ArrowLeft" || e.key == "ArrowRight" || e.key == "ArrowUp") {
+        if (e.key == "ArrowDown" || e.key == "ArrowLeft" || e.key == "ArrowRight" || e.key == "ArrowUp" || e.key == " ") {
             keyState[e.key] = false;
-            console.log(`keyup: ${keyState[e.key]}`);
+            console.log(`keyup: ${e.key}, ${keyState[e.key]}`);
         }
     })
 }
@@ -160,7 +180,7 @@ function collisionInfo(direction, axisVal) {
         case "left":
             return axisVal == 1 ? 0 : 0 - PX_WIDTH;
         case "bottom":
-            return axisVal == 3 ? 480 : 480 + PX_HEIGHT;
+            return axisVal == 3 ? 408 : 408 + PX_HEIGHT;
     }
 }
 
@@ -192,9 +212,15 @@ function detectCollision(block) {
     processCollision(block, rows, ROW_IDENTIFIERS, [3, 2], "bottom");
 }
 
+function setBlock(block) {
+    block.classList.remove("block");
+    block.classList.add("set-block");
+}
+
+
 function main() {
     createBoard();
-    addArrowCtrls();
+    addCtrls();
     gameLoop();
 
     // These need to reused inside other functions, but is here as test

@@ -17,13 +17,13 @@ body {
     transform: translate(-50%, -50%)
 }
 
-.block {
-    position: relative;
+.block, .set-block {
+    position: absolute;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(3, 1fr);
     width: fit-content;
-    border: 1px solid black;
+    /* border: 1px solid black; */
 }
 
 .filled {
