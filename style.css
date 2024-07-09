@@ -23,7 +23,7 @@ body {
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(3, 1fr);
     width: fit-content;
-    /* border: 1px solid black; */
+    border: 1px solid black;
 }
 
 .filled {
@@ -31,6 +31,12 @@ body {
     width: 24px;
     height: 24px;
     background-color: black;
+}
+
+/* TEST USE */
+.block {
+    left: 48px;
+    /* top: 24px; */
 }
 
 /* Create board */
