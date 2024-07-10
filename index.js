@@ -173,21 +173,16 @@ function gameLoop() {
     }
 
     // Controls speed that block moves
-    setTimeout(gameLoop, 16);
+    setTimeout(gameLoop, 30);
 } 
 // SECTION: Block collision detection
-// let collisionTest = {
-//     "leftOuterX": 9999,
-//     "rightOuterX": 9999,
-//     "bottomOuterY": 0
-// };
-
-let collisionTest = {
+let blockOuterVals = {
     "leftOuterX": [9999, 9999, 9999],
     "rightOuterX": [0, 0, 0],
     "bottomOuterY": 0
 };
 
+// Has row/col coor that block will move into
 let sideToMove = {
     "left": {
         "x": [],
@@ -198,39 +193,56 @@ let sideToMove = {
         "y": []
     }
 }
-// Cycle through the block's px
-// Get the outermost sides of the BLOCK
+
+function checkNewSection(clientRect, blockOuterVals, directionToMove) {
+    switch (directionToMove) {
+        case "left":
+        case "right":
+            if (clientRect.bottom != blockOuterVals["bottomOuterY"]) return true;
+    }
+    return false;
+}
+
+function processBlockOuterSides(section, clientRect, blockOuterVals, direction) {
+    let currentVal = clientRect[direction];
+    let outerVal = blockOuterVals[`${direction}OuterX`][section];
+    
+    switch (direction) {
+        case "left":
+            // Gets the leftmost side of block
+            currentVal < outerVal && (blockOuterVals[`${direction}OuterX`][section] = currentVal);
+            break;
+        case "right":
+            currentVal > outerVal && (blockOuterVals[`${direction}OuterX`][section] = currentVal);
+            break;
+    }
+}
+
+// Get the outermost sides of block
 function getBlockOuterSides(direction) {
-    // Get (x, y) per row/col of the 3x3 block grid
-    // Is row/col num based on movement; keeps track of which row we are on
+    /* Get (x, y) per row/col in 3x3 block grid */
+    /* Whether row or col is based on movement */
+
+    // Track which row/col we are on
     let section = -1;
+
+    // Cycle through block's px
     for (let i = 0; i < PX_COUNT; i++) {
         let px = document.querySelectorAll(".px");
         let pos = px[i].getBoundingClientRect();
 
-        // If "filled", get it's (x, y) coor
+        // If "filled," get (x, y) coor
         if (px[i].classList.contains("filled")) {
             // Signals new row/col to get outermost collision from
-            if (pos.bottom != collisionTest["bottomOuterY"]) {
-                collisionTest["bottomOuterY"] = pos.bottom;
+            if (checkNewSection(pos, blockOuterVals, direction) == true) {
+                blockOuterVals["bottomOuterY"] = pos.bottom;
                 section += 1;
             }
-
-            // For left --> if x < leftOuterX, make that new leftOuterX
-            if (direction == "left" && pos.left < collisionTest["leftOuterX"][section]) {
-                collisionTest["leftOuterX"][section] = pos.left;
-
-            }
-            if (direction == "right" && pos.right > collisionTest["rightOuterX"][section]) {
-                collisionTest["rightOuterX"][section] = pos.right;
-            }
+            processBlockOuterSides(section, pos, blockOuterVals, "left");
+            processBlockOuterSides(section, pos, blockOuterVals, "right");
         }
-    }  
-    // console.log(collisionTest["leftOuterX"]);
-    // console.log(collisionTest["rightOuterX"]);
+    }
 }
-
-// getBlockOuterSides();
 
 function getSideCoor(direction) {
     let section = 0;
@@ -238,14 +250,14 @@ function getSideCoor(direction) {
         let px = document.querySelectorAll(".px");
         let pos = px[i].getBoundingClientRect();
         if (px[i].classList.contains("filled")) {
-            if (direction == "left" && pos.left == collisionTest["leftOuterX"][section]) {
+            if (direction == "left" && pos.left == blockOuterVals["leftOuterX"][section]) {
                 sideToMove["left"]["x"].push(pos.left - 1 - PX_WIDTH);
                 sideToMove["left"]["y"].push(pos.bottom - 1);
                 section += 1;
                 // console.log(px[i]);
             }
             // console.log(`right: ${pos.right}`);
-            if (direction == "right" && pos.right == collisionTest["rightOuterX"][section]) {
+            if (direction == "right" && pos.right == blockOuterVals["rightOuterX"][section]) {
                 sideToMove["right"]["x"].push(pos.right - 1 + PX_WIDTH);
                 sideToMove["right"]["y"].push(pos.bottom - 1);
                 section += 1;
@@ -365,7 +377,7 @@ function hasObstacle(direction) {
 // console.log(hasObstacle());
 
 function resetCollisionInfo() {
-    collisionTest = {
+    blockOuterVals = {
         "leftOuterX": [9999, 9999, 9999],
         "rightOuterX": [0, 0, 0],
         "bottomOuterY": 0
@@ -400,7 +412,7 @@ console.log(cell.getBoundingClientRect().right);
 main();
 
 
-// getBlockOuterSides();
+getBlockOuterSides("left");
 // getSideCoor();
 // console.log(hasObstacle());
 
