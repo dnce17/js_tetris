@@ -31,13 +31,6 @@ let keyState = {
     "ArrowRight": null,
     " ": null
 };
-let collision = {
-    "bottom": 408,
-    "left": 0,
-    "right": 216 - (PX_WIDTH * 2)
-};
-
-let testCell = document.querySelector(".test-cell");
 
 function createBoard() {
     let board = document.querySelector(".board");
@@ -63,7 +56,7 @@ function blockTypes() {
             0, 1, 0],
         ],
         "S": [
-            [0, 0, 1,
+            [0, 1, 1,
              1, 1, 0,
              0, 0, 1],
             [1, 0, 0,
@@ -155,15 +148,23 @@ function gameLoop() {
         block.style.top = `${block.offsetTop + PX_HEIGHT}px`;
     }    
     if (keyState["ArrowLeft"] == true) {
-        getBlockOuterSides();
-        getSideCoor();
-        if (hasObstacle() == false) {
+        direction = "left";
+        getBlockOuterSides(direction);
+        getSideCoor(direction);
+        if (hasObstacle(direction) == false) {
             block.style.left = `${block.offsetLeft - PX_WIDTH}px`;
         }
         // block.style.left = `${block.offsetLeft - PX_WIDTH}px`;
     }
     if (keyState["ArrowRight"] == true) {
-        block.style.left = `${block.offsetLeft + PX_WIDTH}px`;
+        direction = "right";
+        getBlockOuterSides(direction);
+        getSideCoor(direction);
+        // console.log(hasObstacle());
+        if (hasObstacle(direction) == false) {
+            block.style.left = `${block.offsetLeft + PX_WIDTH}px`;
+        }
+        // block.style.left = `${block.offsetLeft + PX_WIDTH}px`;
     }
 
     // TEST USE ONLY
@@ -183,7 +184,7 @@ function gameLoop() {
 
 let collisionTest = {
     "leftOuterX": [9999, 9999, 9999],
-    "rightOuterX": 9999,
+    "rightOuterX": [0, 0, 0],
     "bottomOuterY": 0
 };
 
@@ -191,55 +192,69 @@ let sideToMove = {
     "left": {
         "x": [],
         "y": []
+    },
+    "right": {
+        "x": [],
+        "y": []
     }
 }
 // Cycle through the block's px
 // Get the outermost sides of the BLOCK
-function getBlockOuterSides() {
-    // We need the x, y of each row of the 3x3 block grid. This will keep track of which row we are on
-    let rowNum = -1;
+function getBlockOuterSides(direction) {
+    // Get (x, y) per row/col of the 3x3 block grid
+    // Is row/col num based on movement; keeps track of which row we are on
+    let section = -1;
     for (let i = 0; i < PX_COUNT; i++) {
         let px = document.querySelectorAll(".px");
         let pos = px[i].getBoundingClientRect();
 
-        // If "filled", get it's x,y coor
+        // If "filled", get it's (x, y) coor
         if (px[i].classList.contains("filled")) {
+            // Signals new row/col to get outermost collision from
             if (pos.bottom != collisionTest["bottomOuterY"]) {
                 collisionTest["bottomOuterY"] = pos.bottom;
-                rowNum += 1;
+                section += 1;
             }
-            // if pos.bottom is not equal to cT[bottomOuterY]:
-                // Make cT[bottomOuterY] equal to new bottom
-                // row += 1
-            
-            // For left --> if x < leftOuterX, make that new leftOuterX
-            if (pos.left < collisionTest["leftOuterX"][rowNum]) {
-                console.log("changed");
-                collisionTest["leftOuterX"][rowNum] = pos.left;
 
+            // For left --> if x < leftOuterX, make that new leftOuterX
+            if (direction == "left" && pos.left < collisionTest["leftOuterX"][section]) {
+                collisionTest["leftOuterX"][section] = pos.left;
+
+            }
+            if (direction == "right" && pos.right > collisionTest["rightOuterX"][section]) {
+                collisionTest["rightOuterX"][section] = pos.right;
             }
         }
     }  
-    console.log(collisionTest["leftOuterX"]);
+    // console.log(collisionTest["leftOuterX"]);
+    // console.log(collisionTest["rightOuterX"]);
 }
 
 // getBlockOuterSides();
 
-function getSideCoor() {
-    let rowNum = 0;
+function getSideCoor(direction) {
+    let section = 0;
     for (let i = 0; i < PX_COUNT; i++) {
         let px = document.querySelectorAll(".px");
         let pos = px[i].getBoundingClientRect();
         if (px[i].classList.contains("filled")) {
-            if (pos.left == collisionTest["leftOuterX"][rowNum]) {
+            if (direction == "left" && pos.left == collisionTest["leftOuterX"][section]) {
                 sideToMove["left"]["x"].push(pos.left - 1 - PX_WIDTH);
                 sideToMove["left"]["y"].push(pos.bottom - 1);
-                rowNum += 1;
+                section += 1;
+                // console.log(px[i]);
+            }
+            // console.log(`right: ${pos.right}`);
+            if (direction == "right" && pos.right == collisionTest["rightOuterX"][section]) {
+                sideToMove["right"]["x"].push(pos.right - 1 + PX_WIDTH);
+                sideToMove["right"]["y"].push(pos.bottom - 1);
+                section += 1;
                 // console.log(px[i]);
             }
         }
     }
-    console.log(sideToMove["left"]);
+    // console.log(sideToMove["left"]);
+    console.log(sideToMove["right"]);
 }
 // Get the coor of the col/row that block will move to
 // NOTE: The -1 is there b/c clientrect methods are all 1 greater than the cell's
@@ -257,10 +272,9 @@ function closeCell(cellNumArr) {
 
 // Cycle through the BOARD
 // Determine if block can move
-function hasObstacle() {
+function hasObstacle(direction) {
     let board = document.querySelector(".board");
     let hasObstacle = false
-    let leftWall = 0;
     for (let i = 0; i < board.children.length; i++) {
         let cell = board.children[i];
         let boardPos = cell.getBoundingClientRect();
@@ -268,7 +282,8 @@ function hasObstacle() {
         // First check if any of the sideToMove x's go beyond cell 1's pos.left. If so, hasObstacle is auto true b/c there is a wall
         // For future reference, adding this code kind of slows movement down, so you may need to either
         // TRY doing wall collision in a separate function or adjust game speed in game loop
-        if (i == 0) {
+        if (direction == "left" && i == 0) {
+            // LEFT TEST
             for (const val of sideToMove["left"]["x"]) {
                 if (val < boardPos.left) {
                     resetCollisionInfo();
@@ -276,43 +291,63 @@ function hasObstacle() {
                     return hasObstacle;
                 }
             }
-
         }
 
-        // console.log(boardPos.left);
-        // console.log(board.children[0].getBoundingClientRect().left)
-
-        // for (let k = 0; k < sideToMove["left"]["x"].length; k++) {
-        //     let x = sideToMove["left"]["x"][k];
-        //     console.log(x);
-        //     if (x < leftWall) {
-        //         resetCollisionInfo();
-        //         hasObstacle = true;
-        //         return hasObstacle;
-        //     }
-        // }
-
-        // break;
-
-        for (let k = 0; k < sideToMove["left"]["x"].length; k++) {
-            // console.log(sideToMove["left"]["x"][k], sideToMove["left"]["y"][k]);
-            let x = sideToMove["left"]["x"][k];
-            let y = sideToMove["left"]["y"][k];
-
-            // If the board cell left is equal to sideToMove["left"]["x"][k] and bottom = sideToMove["left"]["y"][k] 
-            if (boardPos.left == x && boardPos.bottom == y) {
-                // check if that cell is occupied, if so, has obstacle is true and break immediately
-                if (cell.classList.contains("closed")) {
-                    console.log("can NOT move");
+        if (direction == "right" && i == board.children.length - 1) {
+            // RIGHT TEST
+            for (const val of sideToMove["right"]["x"]) {
+                if (val > boardPos.right) {
+                    resetCollisionInfo();
                     hasObstacle = true;
-                    break;
-                }
-                else {
-                    console.log("can move");
+                    return hasObstacle;
                 }
             }
-            // else continue to check if all left-side of filled block px has obstacle
-        } 
+        }
+        
+        // LEFT TEST
+        if (direction == "left") {
+            for (let k = 0; k < sideToMove["left"]["x"].length; k++) {
+                // console.log(sideToMove["left"]["x"][k], sideToMove["left"]["y"][k]);
+                let x = sideToMove["left"]["x"][k];
+                let y = sideToMove["left"]["y"][k];
+    
+                // If the board cell left is equal to sideToMove["left"]["x"][k] and bottom = sideToMove["left"]["y"][k] 
+                if (boardPos.left == x && boardPos.bottom == y) {
+                    // check if that cell is occupied, if so, has obstacle is true and break immediately
+                    if (cell.classList.contains("closed")) {
+                        console.log("can NOT move");
+                        hasObstacle = true;
+                        break;
+                    }
+                    else {
+                        console.log("can move");
+                    }
+                }
+                // else continue to check if all left-side of filled block px has obstacle
+            } 
+        }
+
+        // RIGHT TEST
+        if (direction == "right") {
+            for (let k = 0; k < sideToMove["right"]["x"].length; k++) {
+                let x = sideToMove["right"]["x"][k];
+                let y = sideToMove["right"]["y"][k];
+    
+                if (boardPos.right == x && boardPos.bottom == y) {
+                    if (cell.classList.contains("closed")) {
+                        
+                        console.log("can NOT move");
+                        console.log(boardPos.right);
+                        console.log(x);
+                        hasObstacle = true;
+                        break;
+                    }
+                    else {
+                        console.log("can move");
+                    }
+                }
+            } 
+        }
 
         if (hasObstacle == true) {
             break;
@@ -332,12 +367,16 @@ function hasObstacle() {
 function resetCollisionInfo() {
     collisionTest = {
         "leftOuterX": [9999, 9999, 9999],
-        "rightOuterX": 9999,
+        "rightOuterX": [0, 0, 0],
         "bottomOuterY": 0
     };
     
     sideToMove = {
         "left": {
+            "x": [],
+            "y": []
+        },
+        "right": {
             "x": [],
             "y": []
         }
@@ -346,13 +385,16 @@ function resetCollisionInfo() {
 
 function main() {
     createBoard();
-    closeCell([1, 21]);
+    closeCell([1, 18, 21]);
 
     // These need to reused inside other functions, but is here as test
     createBlock();
 
     addCtrls();
     gameLoop();
+
+    let cell = document.querySelector(".cell-15");
+console.log(cell.getBoundingClientRect().right);
 }
 
 main();
