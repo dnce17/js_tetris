@@ -175,11 +175,12 @@ function gameLoop() {
     // Controls speed that block moves
     setTimeout(gameLoop, 30);
 } 
+
 // SECTION: Block collision detection
 let blockOuterVals = {
     "leftOuterX": [9999, 9999, 9999],
-    "rightOuterX": [0, 0, 0],
-    "bottomOuterY": 0
+    "rightOuterX": [-1, -1, -1],
+    "bottomOuterY": -1
 };
 
 // Has row/col coor that block will move into
@@ -199,6 +200,10 @@ function checkNewSection(clientRect, blockOuterVals, directionToMove) {
         case "left":
         case "right":
             if (clientRect.bottom != blockOuterVals["bottomOuterY"]) return true;
+        
+        // NOTE: for this to work, blockOuterVals gotta be adjusted
+        // case "bottom":
+        //     if (clientRect.left != blockOuterVals["leftOuterX"]) return true;
     }
     return false;
 }
@@ -233,13 +238,19 @@ function getBlockOuterSides(direction) {
 
         // If "filled," get (x, y) coor
         if (px[i].classList.contains("filled")) {
-            // Signals new row/col to get outermost collision from
+            // Checks for new row/col; purpose: ultimately want to get outermost "filled" px val of each row/col of block
             if (checkNewSection(pos, blockOuterVals, direction) == true) {
-                blockOuterVals["bottomOuterY"] = pos.bottom;
+                if (direction == "left" || direction == "right") {
+                    blockOuterVals["bottomOuterY"] = pos.bottom;
+                }
+                // else if (direction == "bottom") {
+                //     blockOuterVals["leftOuterX"] = pos.left;
+                // }
+
                 section += 1;
             }
-            processBlockOuterSides(section, pos, blockOuterVals, "left");
-            processBlockOuterSides(section, pos, blockOuterVals, "right");
+
+            processBlockOuterSides(section, pos, blockOuterVals, direction);
         }
     }
 }
@@ -397,7 +408,7 @@ function resetCollisionInfo() {
 
 function main() {
     createBoard();
-    closeCell([1, 18, 21]);
+    closeCell([1, 18, 21, 35]);
 
     // These need to reused inside other functions, but is here as test
     createBlock();
@@ -405,14 +416,23 @@ function main() {
     addCtrls();
     gameLoop();
 
-    let cell = document.querySelector(".cell-15");
-console.log(cell.getBoundingClientRect().right);
+    let cell = document.querySelector(".cell-25");
+console.log(cell.getBoundingClientRect().bottom);
+
+    // for (let i = 0; i < PX_COUNT; i++) {
+    //     let px = document.querySelectorAll(".px");
+    //     let pos = px[i].getBoundingClientRect();
+    //     if (i == PX_COUNT - 1) {
+    //         console.log(px);
+    //         console.log(pos.bottom - 1);
+    //     }
+    // }
 }
 
 main();
 
 
-getBlockOuterSides("left");
+// getBlockOuterSides("left");
 // getSideCoor();
 // console.log(hasObstacle());
 
