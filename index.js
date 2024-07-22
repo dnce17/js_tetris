@@ -135,6 +135,8 @@ function gameLoop() {
     let block = document.querySelector(".block");
     
     if (keyState["ArrowDown"] == true) {
+        direction = "bottom";
+        getBlockOuterSides(direction);
         block.style.top = `${block.offsetTop + PX_HEIGHT}px`;
     }    
     if (keyState["ArrowLeft"] == true) {
@@ -198,22 +200,28 @@ let sideToMove = {
 }
 
 function checkNewSection(clientRect, blockOuterVals, directionToMove) {
-    switch (directionToMove) {
-        case "left":
-        case "right":
-            if (clientRect.bottom != blockOuterVals.outerX["bottomOuterY"]) return true;
-        
-        // NOTE: for this to work, blockOuterVals gotta be adjusted
-        // case "bottom":
-        //     if (clientRect.left != blockOuterVals.outerX["leftOuterX"]) return true;
+    if (directionToMove == "left" || directionToMove == "right") {
+        if (clientRect.bottom != blockOuterVals.outerX["bottomOuterY"]) {
+            return true;
+        }
+    }
+    if (directionToMove == "bottom") {
+        if (clientRect.left != blockOuterVals.outerY["leftOuterX"]) {
+            return true;
+        }
     }
     return false;
 }
 
 function processBlockOuterSides(section, clientRect, blockOuterVals, direction) {
     let currentVal = clientRect[direction];
-    let outerVal = blockOuterVals.outerX[`${direction}OuterX`][section];
-    
+    if (direction == "left" || direction =="right") {
+        outerVal = blockOuterVals.outerX[`${direction}OuterX`][section];
+    }
+    else {
+        outerVal = blockOuterVals.outerY[`${direction}OuterY`][section];
+    }
+
     switch (direction) {
         case "left":
             // Gets the leftmost side of block
@@ -221,6 +229,9 @@ function processBlockOuterSides(section, clientRect, blockOuterVals, direction) 
             break;
         case "right":
             currentVal > outerVal && (blockOuterVals.outerX[`${direction}OuterX`][section] = currentVal);
+            break;
+        case "bottom":
+            currentVal > outerVal && (blockOuterVals.outerY[`${direction}OuterY`][section] = currentVal);
             break;
     }
 }
@@ -245,9 +256,10 @@ function getBlockOuterSides(direction) {
                 if (direction == "left" || direction == "right") {
                     blockOuterVals.outerX["bottomOuterY"] = pos.bottom;
                 }
-                // else if (direction == "bottom") {
-                //     blockOuterVals.outerX["leftOuterX"] = pos.left;
-                // }
+
+                if (direction == "bottom") {
+                    blockOuterVals.outerY["leftOuterX"] = pos.left;
+                }
 
                 section += 1;
             }
@@ -255,6 +267,7 @@ function getBlockOuterSides(direction) {
             processBlockOuterSides(section, pos, blockOuterVals, direction);
         }
     }
+    console.log(blockOuterVals);
 }
 
 // Get  coor of  col/row that block will move to
@@ -386,12 +399,17 @@ function resetCollisionInfo() {
         }
     };
     
+    // Has row/col coor that block will move into
     sideToMove = {
         "left": {
             "x": [],
             "y": []
         },
         "right": {
+            "x": [],
+            "y": []
+        },
+        "bottom": {
             "x": [],
             "y": []
         }
@@ -408,17 +426,18 @@ function main() {
     addCtrls();
     gameLoop();
 
-    // let cell = document.querySelector(".cell-4");
-    // console.log(cell.getBoundingClientRect().left);
+    let cellNum = 4;
+    let cell = document.querySelector(`.cell-${cellNum}`);
+    console.log(`Cell ${cellNum} Left Coor: ${cell.getBoundingClientRect().left}`);
 
-    // for (let i = 0; i < PX_COUNT; i++) {
-    //     let px = document.querySelectorAll(".px");
-    //     let pos = px[i].getBoundingClientRect();
-    //     if (i == 1) {
-    //         console.log(px);
-    //         console.log(pos.left);
-    //     }
-    // }
+    for (let i = 0; i < PX_COUNT; i++) {
+        let px = document.querySelectorAll(".px");
+        let pos = px[i].getBoundingClientRect();
+        if (i == 1) {
+            console.log(px);
+            console.log(`Block px 4 Left Coor: ${pos.left}`);
+        }
+    }
 }
 
 main();
