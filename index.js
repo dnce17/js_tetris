@@ -168,9 +168,17 @@ function gameLoop() {
 
 // SECTION: Block collision detection
 let blockOuterVals = {
-    "leftOuterX": [9999, 9999, 9999],
-    "rightOuterX": [-1, -1, -1],
-    "bottomOuterY": -1
+    "outerX": {
+        "leftOuterX": [9999, 9999, 9999],
+        "rightOuterX": [-1, -1, -1],
+
+        // Used to determine if new row while getting outermost coor
+        "bottomOuterY": -1
+    },
+    "outerY": {
+        "bottomOuterY": [9999, 9999, 9999],
+        "leftOuterX": -1
+    }
 };
 
 // Has row/col coor that block will move into
@@ -182,6 +190,10 @@ let sideToMove = {
     "right": {
         "x": [],
         "y": []
+    },
+    "bottom": {
+        "x": [],
+        "y": []
     }
 }
 
@@ -189,26 +201,26 @@ function checkNewSection(clientRect, blockOuterVals, directionToMove) {
     switch (directionToMove) {
         case "left":
         case "right":
-            if (clientRect.bottom != blockOuterVals["bottomOuterY"]) return true;
+            if (clientRect.bottom != blockOuterVals.outerX["bottomOuterY"]) return true;
         
         // NOTE: for this to work, blockOuterVals gotta be adjusted
         // case "bottom":
-        //     if (clientRect.left != blockOuterVals["leftOuterX"]) return true;
+        //     if (clientRect.left != blockOuterVals.outerX["leftOuterX"]) return true;
     }
     return false;
 }
 
 function processBlockOuterSides(section, clientRect, blockOuterVals, direction) {
     let currentVal = clientRect[direction];
-    let outerVal = blockOuterVals[`${direction}OuterX`][section];
+    let outerVal = blockOuterVals.outerX[`${direction}OuterX`][section];
     
     switch (direction) {
         case "left":
             // Gets the leftmost side of block
-            currentVal < outerVal && (blockOuterVals[`${direction}OuterX`][section] = currentVal);
+            currentVal < outerVal && (blockOuterVals.outerX[`${direction}OuterX`][section] = currentVal);
             break;
         case "right":
-            currentVal > outerVal && (blockOuterVals[`${direction}OuterX`][section] = currentVal);
+            currentVal > outerVal && (blockOuterVals.outerX[`${direction}OuterX`][section] = currentVal);
             break;
     }
 }
@@ -231,10 +243,10 @@ function getBlockOuterSides(direction) {
             // Checks for new row/col; purpose: ultimately want to get outermost "filled" px val of each row/col of block
             if (checkNewSection(pos, blockOuterVals, direction) == true) {
                 if (direction == "left" || direction == "right") {
-                    blockOuterVals["bottomOuterY"] = pos.bottom;
+                    blockOuterVals.outerX["bottomOuterY"] = pos.bottom;
                 }
                 // else if (direction == "bottom") {
-                //     blockOuterVals["leftOuterX"] = pos.left;
+                //     blockOuterVals.outerX["leftOuterX"] = pos.left;
                 // }
 
                 section += 1;
@@ -246,20 +258,20 @@ function getBlockOuterSides(direction) {
 }
 
 // Get  coor of  col/row that block will move to
-// NOTE: -1 is there b/c clientrect methods are all 1 greater than the cell
+// NOTE: -1 is there b/c clientrect methods are all 1 greater than the cell due to borders (WILL BE REMOVED IN FUTURE)
 function getSideCoor(direction) {
     let section = 0;
     for (let i = 0; i < PX_COUNT; i++) {
         let px = document.querySelectorAll(".px");
         let pos = px[i].getBoundingClientRect();
         if (px[i].classList.contains("filled")) {
-            if (direction == "left" && pos.left == blockOuterVals["leftOuterX"][section]) {
+            if (direction == "left" && pos.left == blockOuterVals.outerX["leftOuterX"][section]) {
                 sideToMove["left"]["x"].push(pos.left - 1 - PX_WIDTH);
                 sideToMove["left"]["y"].push(pos.bottom - 1);
                 section += 1;
             }
             // console.log(`right: ${pos.right}`);
-            if (direction == "right" && pos.right == blockOuterVals["rightOuterX"][section]) {
+            if (direction == "right" && pos.right == blockOuterVals.outerX["rightOuterX"][section]) {
                 sideToMove["right"]["x"].push(pos.right - 1 + PX_WIDTH);
                 sideToMove["right"]["y"].push(pos.bottom - 1);
                 section += 1;
@@ -361,9 +373,17 @@ function hasObstacle(direction) {
 
 function resetCollisionInfo() {
     blockOuterVals = {
-        "leftOuterX": [9999, 9999, 9999],
-        "rightOuterX": [0, 0, 0],
-        "bottomOuterY": 0
+        "outerX": {
+            "leftOuterX": [9999, 9999, 9999],
+            "rightOuterX": [-1, -1, -1],
+    
+            // Used to determine if new row while getting outermost coor
+            "bottomOuterY": -1
+        },
+        "outerY": {
+            "bottomOuterY": [9999, 9999, 9999],
+            "leftOuterX": -1
+        }
     };
     
     sideToMove = {
@@ -388,15 +408,15 @@ function main() {
     addCtrls();
     gameLoop();
 
-    let cell = document.querySelector(".cell-1");
-    console.log(cell.getBoundingClientRect().bottom);
+    // let cell = document.querySelector(".cell-4");
+    // console.log(cell.getBoundingClientRect().left);
 
     // for (let i = 0; i < PX_COUNT; i++) {
     //     let px = document.querySelectorAll(".px");
     //     let pos = px[i].getBoundingClientRect();
-    //     if (i == PX_COUNT - 1) {
+    //     if (i == 1) {
     //         console.log(px);
-    //         console.log(pos.bottom - 1);
+    //         console.log(pos.left);
     //     }
     // }
 }
