@@ -9,22 +9,21 @@ function createEleWithCls(ele, clsArr) {
     return element;
 }
 
+// TEST USE: Create obstacles for block collision test
+function closeCell(cellNumArr) {
+    for (let i = 0; i < cellNumArr.length; i++) {
+        let cell = document.querySelector(`.cell-${cellNumArr[i]}`);
+        cell.classList.add("closed");
+        cell.style.backgroundColor = "green";
+    }
+}
+
 // TETRIS BLOCK INFO
 const PX_WIDTH = 24;
 const PX_HEIGHT = 24;
 const PX_COUNT = 9; // Block is 3x3
 // const BLOCK_BAG = ["Z", "S", "L"];
 const BLOCK_BAG = ["S"];
-const COL_IDENTIFIERS = {
-    1: [0, 3, 6],
-    2: [1, 4, 7],
-    3: [2, 5, 8],
-};
-const ROW_IDENTIFIERS = {
-    1: [0, 1, 2],
-    2: [3, 4, 5],
-    3: [6, 7, 8],
-};
 let keyState = {
     "ArrowDown": null,
     "ArrowLeft": null,
@@ -114,22 +113,13 @@ function createBlock() {
 }
 
 // SECTION: game controls
-function addDropCtrl(block) {
-    if (keyState[" "] == true) {
-        setBlock(block);
-        createBlock();
-    }
-}
-
 function addCtrls() {
     window.addEventListener("keydown", function (e) {
         if (e.key == "ArrowDown" || e.key == "ArrowLeft" || e.key == "ArrowRight" || e.key == "ArrowUp" || e.key == " ") {
             keyState[e.key] = true;
             console.log(`keydown: ${e.key}, ${keyState[e.key]}`);
 
-            // Not added to game loop b/c cause multiple new blocks to form instead of 1
-            let block = document.querySelector(".block");
-            addDropCtrl(block);
+            // ADD LATER: addDropCtrl() added to game loop b/c cause multiple new blocks to form instead of 1
         }
     }); 
 
@@ -255,6 +245,8 @@ function getBlockOuterSides(direction) {
     }
 }
 
+// Get  coor of  col/row that block will move to
+// NOTE: -1 is there b/c clientrect methods are all 1 greater than the cell
 function getSideCoor(direction) {
     let section = 0;
     for (let i = 0; i < PX_COUNT; i++) {
@@ -265,35 +257,17 @@ function getSideCoor(direction) {
                 sideToMove["left"]["x"].push(pos.left - 1 - PX_WIDTH);
                 sideToMove["left"]["y"].push(pos.bottom - 1);
                 section += 1;
-                // console.log(px[i]);
             }
             // console.log(`right: ${pos.right}`);
             if (direction == "right" && pos.right == blockOuterVals["rightOuterX"][section]) {
                 sideToMove["right"]["x"].push(pos.right - 1 + PX_WIDTH);
                 sideToMove["right"]["y"].push(pos.bottom - 1);
                 section += 1;
-                // console.log(px[i]);
             }
         }
     }
-    // console.log(sideToMove["left"]);
-    console.log(sideToMove["right"]);
-}
-// Get the coor of the col/row that block will move to
-// NOTE: The -1 is there b/c clientrect methods are all 1 greater than the cell's
-// getSideCoor();
-
-// Create obstacles for block collision test
-function closeCell(cellNumArr) {
-    for (let i = 0; i < cellNumArr.length; i++) {
-        let cell = document.querySelector(`.cell-${cellNumArr[i]}`);
-        cell.classList.add("closed");
-        cell.style.backgroundColor = "green";
-    }
 }
 
-
-// Cycle through the BOARD
 // Determine if block can move
 function hasObstacle(direction) {
     let board = document.querySelector(".board");
@@ -385,8 +359,6 @@ function hasObstacle(direction) {
     return hasObstacle;
 }
 
-// console.log(hasObstacle());
-
 function resetCollisionInfo() {
     blockOuterVals = {
         "leftOuterX": [9999, 9999, 9999],
@@ -416,8 +388,8 @@ function main() {
     addCtrls();
     gameLoop();
 
-    let cell = document.querySelector(".cell-25");
-console.log(cell.getBoundingClientRect().bottom);
+    let cell = document.querySelector(".cell-1");
+    console.log(cell.getBoundingClientRect().bottom);
 
     // for (let i = 0; i < PX_COUNT; i++) {
     //     let px = document.querySelectorAll(".px");
@@ -430,10 +402,3 @@ console.log(cell.getBoundingClientRect().bottom);
 }
 
 main();
-
-
-// getBlockOuterSides("left");
-// getSideCoor();
-// console.log(hasObstacle());
-
-// If x - PX_WIDTH goes beyond the left of cell-1, then has obstacle is automatically acivated
