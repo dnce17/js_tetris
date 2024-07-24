@@ -55,9 +55,9 @@ function blockTypes() {
             0, 1, 0],
         ],
         "S": [
-            [0, 1, 1,
-             1, 1, 0,
-             0, 0, 1],
+            [1, 1, 1,
+             0, 1, 0,
+             1, 0, 1],
             [1, 0, 0,
              1, 1, 0,
              0, 1, 0],
@@ -137,7 +137,10 @@ function gameLoop() {
     if (keyState["ArrowDown"] == true) {
         direction = "bottom";
         getBlockOuterSides(direction);
-        block.style.top = `${block.offsetTop + PX_HEIGHT}px`;
+        getSideCoor(direction);
+        if (hasObstacle(direction) == false) {
+            block.style.top = `${block.offsetTop + PX_HEIGHT}px`;
+        }
     }    
     if (keyState["ArrowLeft"] == true) {
         direction = "left";
@@ -178,7 +181,7 @@ let blockOuterVals = {
         "bottomOuterY": -1
     },
     "outerY": {
-        "bottomOuterY": [9999, 9999, 9999],
+        "bottomOuterY": [-1, -1, -1],
         "leftOuterX": -1
     }
 };
@@ -231,7 +234,8 @@ function processBlockOuterSides(section, clientRect, blockOuterVals, direction) 
             currentVal > outerVal && (blockOuterVals.outerX[`${direction}OuterX`][section] = currentVal);
             break;
         case "bottom":
-            currentVal > outerVal && (blockOuterVals.outerY[`${direction}OuterY`][section] = currentVal);
+            // KEEP NOTES of the PX_HEIGHT; I will see if this leads to any issue after I alter other func to acc for down
+            currentVal > outerVal && (blockOuterVals.outerY[`${direction}OuterY`][section] = currentVal + PX_HEIGHT);
             break;
     }
 }
@@ -256,7 +260,8 @@ function getBlockOuterSides(direction) {
                 if (direction == "left" || direction == "right") {
                     blockOuterVals.outerX["bottomOuterY"] = pos.bottom;
                 }
-
+                
+                // POSSIBLE ISSUE: b/c we are count from left to right (row by row)
                 if (direction == "bottom") {
                     blockOuterVals.outerY["leftOuterX"] = pos.left;
                 }
@@ -267,7 +272,7 @@ function getBlockOuterSides(direction) {
             processBlockOuterSides(section, pos, blockOuterVals, direction);
         }
     }
-    console.log(blockOuterVals);
+    // console.log(blockOuterVals);
 }
 
 // Get  coor of  col/row that block will move to
@@ -289,8 +294,16 @@ function getSideCoor(direction) {
                 sideToMove["right"]["y"].push(pos.bottom - 1);
                 section += 1;
             }
+
+            if (direction == "bottom" && pos.bottom == blockOuterVals.outerY["bottomOuterY"][section]) {
+                sideToMove["bottom"]["y"].push(pos.bottom - 1 + PX_HEIGHT);
+                sideToMove["bottom"]["x"].push(pos.left - 1);
+                section += 1;
+            }
         }
     }
+    console.log(blockOuterVals);
+    console.log(sideToMove);
 }
 
 // Determine if block can move
@@ -371,6 +384,33 @@ function hasObstacle(direction) {
             } 
         }
 
+        // BOTTOM TEST
+        if (direction == "bottom") {
+            for (let k = 0; k < sideToMove["bottom"]["y"].length; k++) {
+                let y = sideToMove["bottom"]["y"][k];
+                let x = sideToMove["bottom"]["x"][k];
+                
+                if (boardPos.bottom == y && boardPos.left == x) {
+                    if (cell.classList.contains("closed")) {
+                        console.log(`Bottom Y to move into: ${y}, ${boardPos.bottom}`);
+                        console.log(`Bottom X: ${x}, ${boardPos.left}`);
+                        console.log(cell.classList);
+                        
+                        console.log("can NOT move");
+                        console.log(boardPos.bottom);
+                        hasObstacle = true;
+                        break;
+                    }
+                    else {
+                        console.log(`Bottom Y to move into: ${y}, ${boardPos.bottom}`);
+                        console.log(`Bottom X: ${x}, ${boardPos.left}`);
+                        console.log(cell.classList);
+                        console.log("can move");
+                    }
+                }
+            } 
+        }
+
         if (hasObstacle == true) {
             break;
         }
@@ -384,6 +424,8 @@ function hasObstacle(direction) {
     return hasObstacle;
 }
 
+let bottomVal = [];
+
 function resetCollisionInfo() {
     blockOuterVals = {
         "outerX": {
@@ -394,7 +436,7 @@ function resetCollisionInfo() {
             "bottomOuterY": -1
         },
         "outerY": {
-            "bottomOuterY": [9999, 9999, 9999],
+            "bottomOuterY": [-1, -1, -1],
             "leftOuterX": -1
         }
     };
@@ -418,7 +460,7 @@ function resetCollisionInfo() {
 
 function main() {
     createBoard();
-    closeCell([1, 18, 21, 35]);
+    closeCell([1, 18, 21, 46]);
 
     // These need to reused inside other functions, but is here as test
     createBlock();
@@ -426,15 +468,14 @@ function main() {
     addCtrls();
     gameLoop();
 
-    let cellNum = 4;
+    let cellNum = 3;
     let cell = document.querySelector(`.cell-${cellNum}`);
-    console.log(`Cell ${cellNum} Left Coor: ${cell.getBoundingClientRect().left}`);
+    console.log(`Cell ${cellNum} Left Coor: ${cell.getBoundingClientRect().bottom}`);
 
     for (let i = 0; i < PX_COUNT; i++) {
         let px = document.querySelectorAll(".px");
         let pos = px[i].getBoundingClientRect();
         if (i == 1) {
-            console.log(px);
             console.log(`Block px 4 Left Coor: ${pos.left}`);
         }
     }
