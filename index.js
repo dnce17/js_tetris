@@ -1,3 +1,25 @@
+// TEST USE: Create obstacles for block collision test
+function closeCell(cellNumArr) {
+    for (let i = 0; i < cellNumArr.length; i++) {
+        let cell = document.querySelector(`.cell-${cellNumArr[i]}`);
+        cell.classList.add("closed");
+        cell.style.backgroundColor = "green";
+    }
+}
+
+function labelCoor(item, direction) {
+    let testDirection = document.querySelector(".test-direction");
+    testDirection.innerText = direction + " collision";
+
+    for (const c of item.children) {
+        let pos = c.getBoundingClientRect();
+        if (c.classList.contains("filled") || c.classList.contains("cell")) {
+            c.innerText = pos[direction];
+            continue;
+        }
+    }
+}
+
 // REUSABLE
 function createEleWithCls(ele, clsArr) {
     let element = document.createElement(ele);
@@ -9,18 +31,9 @@ function createEleWithCls(ele, clsArr) {
     return element;
 }
 
-// TEST USE: Create obstacles for block collision test
-function closeCell(cellNumArr) {
-    for (let i = 0; i < cellNumArr.length; i++) {
-        let cell = document.querySelector(`.cell-${cellNumArr[i]}`);
-        cell.classList.add("closed");
-        cell.style.backgroundColor = "green";
-    }
-}
-
 // TETRIS BLOCK INFO
-const PX_WIDTH = 24;
-const PX_HEIGHT = 24;
+const PX_WIDTH = 48;
+const PX_HEIGHT = 48;
 const PX_COUNT = 9; // Block is 3x3
 // const BLOCK_BAG = ["Z", "S", "L"];
 const BLOCK_BAG = ["S"];
@@ -33,9 +46,9 @@ let keyState = {
 
 function createBoard() {
     let board = document.querySelector(".board");
-    totalColumn = 10;
-    totalRow = 20;
-    totalCells = totalColumn * totalRow;
+    let totalColumn = 10;
+    let totalRow = 15;
+    let totalCells = totalColumn * totalRow;
 
     for (let i = 0; i < totalCells; i++) {
         cell = createEleWithCls("div", ["cell", "cell-" + (i + 1)]);
@@ -96,14 +109,10 @@ function getBlockType(bag) {
 }
 
 function createBlock() {
-    let blockCtnr = document.querySelector(".block");
+    let tetrisGame = document.querySelector(".tetris-game");
+    let blockCtnr = createEleWithCls("div", ["block"]);
 
-    if (!blockCtnr) {
-        let tetrisGame = document.querySelector(".tetris-game");
-        blockCtnr = createEleWithCls("div", ["block"]);
-        tetrisGame.prepend(blockCtnr);
-    }
-
+    tetrisGame.prepend(blockCtnr);
     defaultBlock = getBlockType(BLOCK_BAG);
 
     for (let i = 0; i < defaultBlock.length; i++) {
@@ -114,19 +123,21 @@ function createBlock() {
 
 // SECTION: game controls
 function addCtrls() {
+    let keys = ["ArrowDown", "ArrowLeft", "ArrowRight", " ", "ArrowUp"];
+
     window.addEventListener("keydown", function (e) {
-        if (e.key == "ArrowDown" || e.key == "ArrowLeft" || e.key == "ArrowRight" || e.key == "ArrowUp" || e.key == " ") {
+        if (keys.includes(e.key)) {
             keyState[e.key] = true;
-            console.log(`keydown: ${e.key}, ${keyState[e.key]}`);
+            // console.log(`keydown: ${e.key}, ${keyState[e.key]}`);
 
             // ADD LATER: addDropCtrl() added to game loop b/c cause multiple new blocks to form instead of 1
         }
     }); 
 
     window.addEventListener("keyup", function(e) {
-        if (e.key == "ArrowDown" || e.key == "ArrowLeft" || e.key == "ArrowRight" || e.key == "ArrowUp" || e.key == " ") {
+        if (keys.includes(e.key)) {
             keyState[e.key] = false;
-            console.log(`keyup: ${e.key}, ${keyState[e.key]}`);
+            // console.log(`keyup: ${e.key}, ${keyState[e.key]}`);
         }
     })
 }
@@ -135,328 +146,67 @@ function gameLoop() {
     let block = document.querySelector(".block");
     
     if (keyState["ArrowDown"] == true) {
-        direction = "bottom";
-        getBlockOuterSides(direction);
-        getSideCoor(direction);
-        if (hasObstacle(direction) == false) {
-            block.style.top = `${block.offsetTop + PX_HEIGHT}px`;
-        }
+        block.style.top = `${block.offsetTop + PX_HEIGHT}px`;
     }    
     if (keyState["ArrowLeft"] == true) {
-        direction = "left";
-        getBlockOuterSides(direction);
-        getSideCoor(direction);
-        if (hasObstacle(direction) == false) {
-            block.style.left = `${block.offsetLeft - PX_WIDTH}px`;
-        }
-        // block.style.left = `${block.offsetLeft - PX_WIDTH}px`;
+        block.style.left = `${block.offsetLeft - PX_WIDTH}px`;
     }
     if (keyState["ArrowRight"] == true) {
-        direction = "right";
-        getBlockOuterSides(direction);
-        getSideCoor(direction);
-        // console.log(hasObstacle());
-        if (hasObstacle(direction) == false) {
-            block.style.left = `${block.offsetLeft + PX_WIDTH}px`;
-        }
-        // block.style.left = `${block.offsetLeft + PX_WIDTH}px`;
+        block.style.left = `${block.offsetLeft + PX_WIDTH}px`;
     }
 
     // TEST USE ONLY
     if (keyState["ArrowUp"] == true) {
         block.style.top = `${block.offsetTop - PX_HEIGHT}px`;
     }
+    let direction = "left"
+    labelCoor(block, direction);
+
+    // Add this if you want to update the board coor everytime you resize window, but it slows block movement a LOT
+    // let board = document.querySelector(".board");
+    // labelCoor(board, direction);
 
     // Controls speed that block moves
-    setTimeout(gameLoop, 30);
+    setTimeout(gameLoop, 20);
 } 
 
 // SECTION: Block collision detection
-let blockOuterVals = {
-    "outerX": {
-        "leftOuterX": [9999, 9999, 9999],
-        "rightOuterX": [-1, -1, -1],
-
-        // Used to determine if new row while getting outermost coor
-        "bottomOuterY": -1
-    },
-    "outerY": {
-        "bottomOuterY": [-1, -1, -1],
-        "leftOuterX": -1
-    }
-};
-
-// Has row/col coor that block will move into
-let sideToMove = {
-    "left": {
-        "x": [],
-        "y": []
-    },
-    "right": {
-        "x": [],
-        "y": []
-    },
-    "bottom": {
-        "x": [],
-        "y": []
-    }
+let nextBlockCoors = {
+    "left": [],
+    "right":[],
+    "bottom":[]
 }
 
-function checkNewSection(clientRect, blockOuterVals, directionToMove) {
-    if (directionToMove == "left" || directionToMove == "right") {
-        if (clientRect.bottom != blockOuterVals.outerX["bottomOuterY"]) {
-            return true;
-        }
-    }
-    if (directionToMove == "bottom") {
-        if (clientRect.left != blockOuterVals.outerY["leftOuterX"]) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function processBlockOuterSides(section, clientRect, blockOuterVals, direction) {
-    let currentVal = clientRect[direction];
-    if (direction == "left" || direction =="right") {
-        outerVal = blockOuterVals.outerX[`${direction}OuterX`][section];
-    }
-    else {
-        outerVal = blockOuterVals.outerY[`${direction}OuterY`][section];
-    }
-
-    switch (direction) {
-        case "left":
-            // Gets the leftmost side of block
-            currentVal < outerVal && (blockOuterVals.outerX[`${direction}OuterX`][section] = currentVal);
-            break;
-        case "right":
-            currentVal > outerVal && (blockOuterVals.outerX[`${direction}OuterX`][section] = currentVal);
-            break;
-        case "bottom":
-            // KEEP NOTES of the PX_HEIGHT; I will see if this leads to any issue after I alter other func to acc for down
-            currentVal > outerVal && (blockOuterVals.outerY[`${direction}OuterY`][section] = currentVal + PX_HEIGHT);
-            break;
-    }
-}
-
-// Get the outermost sides of block
-function getBlockOuterSides(direction) {
-    /* Get (x, y) per row/col in 3x3 block grid */
-    /* Whether row or col is based on movement */
-
-    // Track which row/col we are on
-    let section = -1;
-
-    // Cycle through block's px
-    for (let i = 0; i < PX_COUNT; i++) {
-        let px = document.querySelectorAll(".px");
-        let pos = px[i].getBoundingClientRect();
-
-        // If "filled," get (x, y) coor
-        if (px[i].classList.contains("filled")) {
-            // Checks for new row/col; purpose: ultimately want to get outermost "filled" px val of each row/col of block
-            if (checkNewSection(pos, blockOuterVals, direction) == true) {
-                if (direction == "left" || direction == "right") {
-                    blockOuterVals.outerX["bottomOuterY"] = pos.bottom;
-                }
-                
-                // POSSIBLE ISSUE: b/c we are count from left to right (row by row)
-                if (direction == "bottom") {
-                    blockOuterVals.outerY["leftOuterX"] = pos.left;
-                }
-
-                section += 1;
-            }
-
-            processBlockOuterSides(section, pos, blockOuterVals, direction);
-        }
-    }
-    // console.log(blockOuterVals);
-}
-
-// Get  coor of  col/row that block will move to
-// NOTE: -1 is there b/c clientrect methods are all 1 greater than the cell due to borders (WILL BE REMOVED IN FUTURE)
-function getSideCoor(direction) {
-    let section = 0;
-    for (let i = 0; i < PX_COUNT; i++) {
-        let px = document.querySelectorAll(".px");
-        let pos = px[i].getBoundingClientRect();
-        if (px[i].classList.contains("filled")) {
-            if (direction == "left" && pos.left == blockOuterVals.outerX["leftOuterX"][section]) {
-                sideToMove["left"]["x"].push(pos.left - 1 - PX_WIDTH);
-                sideToMove["left"]["y"].push(pos.bottom - 1);
-                section += 1;
-            }
-            // console.log(`right: ${pos.right}`);
-            if (direction == "right" && pos.right == blockOuterVals.outerX["rightOuterX"][section]) {
-                sideToMove["right"]["x"].push(pos.right - 1 + PX_WIDTH);
-                sideToMove["right"]["y"].push(pos.bottom - 1);
-                section += 1;
-            }
-
-            if (direction == "bottom" && pos.bottom == blockOuterVals.outerY["bottomOuterY"][section]) {
-                sideToMove["bottom"]["y"].push(pos.bottom - 1 + PX_HEIGHT);
-                sideToMove["bottom"]["x"].push(pos.left - 1);
-                section += 1;
+function getNextBlockCoors(storage, block, board, direction) {
+    // For each px in block
+    for (const px of block.children) {
+        // If px has "filled" class
+        if (px.classList.contains("filled")) {
+            // Save the coor of px client rect left/right/bottom (depending on direction) + 24 in storage to get nextStorageCoor
+            let pxPos = px.getBoundingClientRect()
+            switch (direction) {
+                case "left":
+                    storage.left.push(pxPos.left - PX_WIDTH);
+                    break;
+                case "right":
+                    storage.right.push(pxPos.left + PX_WIDTH);
+                    break;
+                case "bottom":
+                    storage.bottom.push(pxPos.bottom + PX_HEIGHT);
+                    break;
             }
         }
     }
-    console.log(blockOuterVals);
-    console.log(sideToMove);
+    console.log(nextBlockCoors.left);
 }
 
-// Determine if block can move
-function hasObstacle(direction) {
+function collision() {
+    let block = document.querySelector(".block");
     let board = document.querySelector(".board");
-    let hasObstacle = false
-    for (let i = 0; i < board.children.length; i++) {
-        let cell = board.children[i];
-        let boardPos = cell.getBoundingClientRect();
-        
-        // First check if any of the sideToMove x's go beyond cell 1's pos.left. If so, hasObstacle is auto true b/c there is a wall
-        // For future reference, adding this code kind of slows movement down, so you may need to either
-        // TRY doing wall collision in a separate function or adjust game speed in game loop
-        if (direction == "left" && i == 0) {
-            // LEFT TEST
-            for (const val of sideToMove["left"]["x"]) {
-                if (val < boardPos.left) {
-                    resetCollisionInfo();
-                    hasObstacle = true;
-                    return hasObstacle;
-                }
-            }
-        }
-
-        if (direction == "right" && i == board.children.length - 1) {
-            // RIGHT TEST
-            for (const val of sideToMove["right"]["x"]) {
-                if (val > boardPos.right) {
-                    resetCollisionInfo();
-                    hasObstacle = true;
-                    return hasObstacle;
-                }
-            }
-        }
-        
-        // LEFT TEST
-        if (direction == "left") {
-            for (let k = 0; k < sideToMove["left"]["x"].length; k++) {
-                // console.log(sideToMove["left"]["x"][k], sideToMove["left"]["y"][k]);
-                let x = sideToMove["left"]["x"][k];
-                let y = sideToMove["left"]["y"][k];
-    
-                // If the board cell left is equal to sideToMove["left"]["x"][k] and bottom = sideToMove["left"]["y"][k] 
-                if (boardPos.left == x && boardPos.bottom == y) {
-                    // check if that cell is occupied, if so, has obstacle is true and break immediately
-                    if (cell.classList.contains("closed")) {
-                        console.log("can NOT move");
-                        hasObstacle = true;
-                        break;
-                    }
-                    else {
-                        console.log("can move");
-                    }
-                }
-                // else continue to check if all left-side of filled block px has obstacle
-            } 
-        }
-
-        // RIGHT TEST
-        if (direction == "right") {
-            for (let k = 0; k < sideToMove["right"]["x"].length; k++) {
-                let x = sideToMove["right"]["x"][k];
-                let y = sideToMove["right"]["y"][k];
-    
-                if (boardPos.right == x && boardPos.bottom == y) {
-                    if (cell.classList.contains("closed")) {
-                        
-                        console.log("can NOT move");
-                        console.log(boardPos.right);
-                        console.log(x);
-                        hasObstacle = true;
-                        break;
-                    }
-                    else {
-                        console.log("can move");
-                    }
-                }
-            } 
-        }
-
-        // BOTTOM TEST
-        if (direction == "bottom") {
-            for (let k = 0; k < sideToMove["bottom"]["y"].length; k++) {
-                let y = sideToMove["bottom"]["y"][k];
-                let x = sideToMove["bottom"]["x"][k];
-                
-                if (boardPos.bottom == y && boardPos.left == x) {
-                    if (cell.classList.contains("closed")) {
-                        console.log(`Bottom Y to move into: ${y}, ${boardPos.bottom}`);
-                        console.log(`Bottom X: ${x}, ${boardPos.left}`);
-                        console.log(cell.classList);
-                        
-                        console.log("can NOT move");
-                        console.log(boardPos.bottom);
-                        hasObstacle = true;
-                        break;
-                    }
-                    else {
-                        console.log(`Bottom Y to move into: ${y}, ${boardPos.bottom}`);
-                        console.log(`Bottom X: ${x}, ${boardPos.left}`);
-                        console.log(cell.classList);
-                        console.log("can move");
-                    }
-                }
-            } 
-        }
-
-        if (hasObstacle == true) {
-            break;
-        }
-
-        // x - 24 is to the left of the filled px of block
-        // HENCE, if ALL the x - 24 of the FILLED px's is 0 (unoccupied), then allow move
-        // Else if even one if 1 (occupied), don't allow movement 
-    }
-    
-    resetCollisionInfo();
-    return hasObstacle;
+    getNextBlockCoors();
+    checkObstacle();
 }
 
-let bottomVal = [];
-
-function resetCollisionInfo() {
-    blockOuterVals = {
-        "outerX": {
-            "leftOuterX": [9999, 9999, 9999],
-            "rightOuterX": [-1, -1, -1],
-    
-            // Used to determine if new row while getting outermost coor
-            "bottomOuterY": -1
-        },
-        "outerY": {
-            "bottomOuterY": [-1, -1, -1],
-            "leftOuterX": -1
-        }
-    };
-    
-    // Has row/col coor that block will move into
-    sideToMove = {
-        "left": {
-            "x": [],
-            "y": []
-        },
-        "right": {
-            "x": [],
-            "y": []
-        },
-        "bottom": {
-            "x": [],
-            "y": []
-        }
-    }
-}
 
 function main() {
     createBoard();
@@ -465,20 +215,30 @@ function main() {
     // These need to reused inside other functions, but is here as test
     createBlock();
 
+    // Other Test
+    let block = document.querySelector(".block");
+    let board = document.querySelector(".board");
+    let direction = "left";
+    labelCoor(board, direction);
+    labelCoor(block, direction);
+
+    getNextBlockCoors(nextBlockCoors, block, board, direction);
+    // ---
+
     addCtrls();
     gameLoop();
 
-    let cellNum = 3;
-    let cell = document.querySelector(`.cell-${cellNum}`);
-    console.log(`Cell ${cellNum} Left Coor: ${cell.getBoundingClientRect().bottom}`);
+    // let cellNum = 3;
+    // let cell = document.querySelector(`.cell-${cellNum}`);
+    // console.log(`Cell ${cellNum} Left Coor: ${cell.getBoundingClientRect().left}`);
 
-    for (let i = 0; i < PX_COUNT; i++) {
-        let px = document.querySelectorAll(".px");
-        let pos = px[i].getBoundingClientRect();
-        if (i == 1) {
-            console.log(`Block px 4 Left Coor: ${pos.left}`);
-        }
-    }
+    // for (let i = 0; i < PX_COUNT; i++) {
+    //     let px = document.querySelectorAll(".px");
+    //     let pos = px[i].getBoundingClientRect();
+    //     if (i == 1) {
+    //         console.log(`Block px 4 Left Coor: ${pos.left}`);
+    //     }
+    // }
 }
 
 main();
