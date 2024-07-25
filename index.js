@@ -172,32 +172,83 @@ function gameLoop() {
 
 // SECTION: Block collision detection
 let nextBlockCoors = {
-    "left": [],
-    "right":[],
-    "bottom":[]
+    // NOTE: (x, y) uniquely define cell; x itself will define a col rather than 1 cell
+    "left": {
+        "x": [],
+        "y": []
+    },
+    "right": {
+        "x": [],
+        "y": []
+    },
+    "bottom": {
+        "x": [],
+        "y": []
+    },
 }
 
-function getNextBlockCoors(storage, block, board, direction) {
+function getNextBlockCoors(coorStorage, block, board, direction) {
     // For each px in block
     for (const px of block.children) {
         // If px has "filled" class
         if (px.classList.contains("filled")) {
             // Save the coor of px client rect left/right/bottom (depending on direction) + 24 in storage to get nextStorageCoor
-            let pxPos = px.getBoundingClientRect()
+            let pxPos = px.getBoundingClientRect();
             switch (direction) {
                 case "left":
-                    storage.left.push(pxPos.left - PX_WIDTH);
+                    coorStorage.left.x.push(pxPos.left - PX_WIDTH);
+                    coorStorage.left.y.push(pxPos.bottom);
                     break;
                 case "right":
-                    storage.right.push(pxPos.left + PX_WIDTH);
+                    coorStorage.right.x.push(pxPos.right + PX_WIDTH);
+                    coorStorage.right.y.push(pxPos.bottom);
                     break;
+
+                // Different from left/right
                 case "bottom":
-                    storage.bottom.push(pxPos.bottom + PX_HEIGHT);
+                    coorStorage.bottom.y.push(pxPos.bottom + PX_HEIGHT);
+                    coorStorage.bottom.x.push(pxPos.left);
                     break;
             }
         }
     }
-    console.log(nextBlockCoors.left);
+
+    let allCoor = []
+    for (let i = 0; i < coorStorage[direction]["x"].length; i++) {
+        allCoor.push(`(${coorStorage[direction]["x"][i]}, ${coorStorage[direction]["y"][i]})`);
+    }
+    console.log(allCoor);
+}
+
+function checkObstacle(coorStorage, board, direction) {
+    // Cycle through board
+    let hasObstacle = false;
+    for (const cell of board.children) {
+        // get cell's bounding rect
+        let cellPos = cell.getBoundingClientRect();
+        let coorDict = coorStorage[direction];
+        // Cycle through nextBlockCoors left/right/bottom
+        for (let i = 0; i < coorDict["x"].length; i++) {
+            // if coor matches the cellPos's left/right/bottom x AND Y
+            let x = coorDict["x"][i];
+            let y = coorDict["y"][i];
+            // console.log(direction + ": (" + x + "," + y + ")");
+            if (direction == "left" || direction == "right") {
+                if (x == cellPos[direction] && y == cellPos.bottom) {
+                    console.log("MATCHED BELOW");
+                    console.log(direction + ": (" + x + "," + y + ")");
+                    // if cell has "closed" class
+                    if (cell.classList.contains("closed")) {
+                        console.log(cell);
+                        hasObstacle = true;
+                        return hasObstacle = true;
+                    }
+                }
+            }
+        }
+    }
+
+    return hasObstacle;
 }
 
 function collision() {
@@ -210,7 +261,7 @@ function collision() {
 
 function main() {
     createBoard();
-    closeCell([1, 18, 21, 46]);
+    closeCell([1, 13, 18, 21, 46]);
 
     // These need to reused inside other functions, but is here as test
     createBlock();
@@ -223,22 +274,23 @@ function main() {
     labelCoor(block, direction);
 
     getNextBlockCoors(nextBlockCoors, block, board, direction);
+    checkObstacle(nextBlockCoors, board, direction);
     // ---
 
     addCtrls();
     gameLoop();
 
-    // let cellNum = 3;
-    // let cell = document.querySelector(`.cell-${cellNum}`);
-    // console.log(`Cell ${cellNum} Left Coor: ${cell.getBoundingClientRect().left}`);
+    let cellNum = 3;
+    let cell = document.querySelector(`.cell-${cellNum}`);
+    console.log(`Cell ${cellNum} Left Coor: ${cell.getBoundingClientRect().right}`);
 
-    // for (let i = 0; i < PX_COUNT; i++) {
-    //     let px = document.querySelectorAll(".px");
-    //     let pos = px[i].getBoundingClientRect();
-    //     if (i == 1) {
-    //         console.log(`Block px 4 Left Coor: ${pos.left}`);
-    //     }
-    // }
+    for (let i = 0; i < PX_COUNT; i++) {
+        let px = document.querySelectorAll(".px");
+        let pos = px[i].getBoundingClientRect();
+        if (i == 1) {
+            console.log(`Block px 4 Left Coor: ${pos.left}`);
+        }
+    }
 }
 
 main();
