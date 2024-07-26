@@ -146,20 +146,32 @@ function gameLoop() {
     let block = document.querySelector(".block");
     
     if (keyState["ArrowDown"] == true) {
-        block.style.top = `${block.offsetTop + PX_HEIGHT}px`;
+        // block.style.top = `${block.offsetTop + PX_HEIGHT}px`;
+
+        if (collision("bottom") == false) {
+            block.style.top = `${block.offsetTop + PX_HEIGHT}px`;
+        }
     }    
     if (keyState["ArrowLeft"] == true) {
-        block.style.left = `${block.offsetLeft - PX_WIDTH}px`;
+        // block.style.left = `${block.offsetLeft - PX_WIDTH}px`;
+
+        if (collision("left") == false) {
+            block.style.left = `${block.offsetLeft - PX_WIDTH}px`;
+        }
     }
     if (keyState["ArrowRight"] == true) {
-        block.style.left = `${block.offsetLeft + PX_WIDTH}px`;
+        // block.style.left = `${block.offsetLeft + PX_WIDTH}px`;
+
+        if (collision("right") == false) {
+            block.style.left = `${block.offsetLeft + PX_WIDTH}px`;
+        }
     }
 
     // TEST USE ONLY
     if (keyState["ArrowUp"] == true) {
         block.style.top = `${block.offsetTop - PX_HEIGHT}px`;
     }
-    let direction = "left"
+    let direction = "bottom"
     labelCoor(block, direction);
 
     // Add this if you want to update the board coor everytime you resize window, but it slows block movement a LOT
@@ -167,7 +179,7 @@ function gameLoop() {
     // labelCoor(board, direction);
 
     // Controls speed that block moves
-    setTimeout(gameLoop, 20);
+    setTimeout(gameLoop, 30);
 } 
 
 // SECTION: Block collision detection
@@ -218,6 +230,7 @@ function getNextBlockCoors(coorStorage, block, board, direction) {
         allCoor.push(`(${coorStorage[direction]["x"][i]}, ${coorStorage[direction]["y"][i]})`);
     }
     console.log(allCoor);
+    console.log(nextBlockCoors);
 }
 
 function checkObstacle(coorStorage, board, direction) {
@@ -245,23 +258,57 @@ function checkObstacle(coorStorage, board, direction) {
                     }
                 }
             }
+
+            if (direction == "bottom") {
+                // Diff is y == cellPos[direction], not x
+                if (y == cellPos[direction] && x == cellPos.left) {
+                    console.log("MATCHED BELOW");
+                    console.log(direction + ": (" + x + "," + y + ")");
+                    if (cell.classList.contains("closed")) {
+                        console.log(cell);
+                        hasObstacle = true;
+                        console.log(`bottom: ${hasObstacle}`);
+                        return hasObstacle = true;
+                    }
+                }
+            }
         }
     }
 
     return hasObstacle;
 }
 
-function collision() {
+function resetCoors(coorStorage) {
+    for (let key in coorStorage) {
+        coorStorage[key] = {
+            "x": [],
+            "y": []
+        };
+    }
+}
+
+function collision(direction) {
     let block = document.querySelector(".block");
     let board = document.querySelector(".board");
-    getNextBlockCoors();
-    checkObstacle();
+
+    getNextBlockCoors(nextBlockCoors, block, board, direction);
+    let hasObstacle = checkObstacle(nextBlockCoors, board, direction);
+    resetCoors(nextBlockCoors);
+
+    if (hasObstacle) {
+        console.log(hasObstacle);
+        console.log("OBSTACLE IN WAY");
+
+        return true;
+    }
+    
+    return false
 }
 
 
 function main() {
     createBoard();
-    closeCell([1, 13, 18, 21, 46]);
+    closeCell([26, 18, 46]);
 
     // These need to reused inside other functions, but is here as test
     createBlock();
@@ -269,12 +316,13 @@ function main() {
     // Other Test
     let block = document.querySelector(".block");
     let board = document.querySelector(".board");
-    let direction = "left";
+    let direction = "bottom";
     labelCoor(board, direction);
     labelCoor(block, direction);
 
-    getNextBlockCoors(nextBlockCoors, block, board, direction);
-    checkObstacle(nextBlockCoors, board, direction);
+    // getNextBlockCoors(nextBlockCoors, block, board, direction);
+    // checkObstacle(nextBlockCoors, board, direction);
+    // collision(direction);
     // ---
 
     addCtrls();
@@ -282,14 +330,14 @@ function main() {
 
     let cellNum = 3;
     let cell = document.querySelector(`.cell-${cellNum}`);
-    console.log(`Cell ${cellNum} Left Coor: ${cell.getBoundingClientRect().right}`);
+    // console.log(`Cell ${cellNum} Left Coor: ${cell.getBoundingClientRect().right}`);
 
     for (let i = 0; i < PX_COUNT; i++) {
         let px = document.querySelectorAll(".px");
         let pos = px[i].getBoundingClientRect();
-        if (i == 1) {
-            console.log(`Block px 4 Left Coor: ${pos.left}`);
-        }
+        // if (i == 1) {
+        //     console.log(`Block px 4 Left Coor: ${pos.left}`);
+        // }
     }
 }
 
