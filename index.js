@@ -68,9 +68,9 @@ function blockTypes() {
             0, 1, 0],
         ],
         "S": [
-            [1, 1, 1,
-             0, 1, 0,
-             1, 0, 1],
+            [0, 1, 1,
+             1, 1, 0,
+             0, 0, 0],
             [1, 0, 0,
              1, 1, 0,
              0, 1, 0],
@@ -126,11 +126,15 @@ function addCtrls() {
     let keys = ["ArrowDown", "ArrowLeft", "ArrowRight", " ", "ArrowUp"];
 
     window.addEventListener("keydown", function (e) {
+        if (e.key == " ") {
+            placeBlock();
+        }
+
         if (keys.includes(e.key)) {
             keyState[e.key] = true;
             // console.log(`keydown: ${e.key}, ${keyState[e.key]}`);
 
-            // ADD LATER: addDropCtrl() added to game loop b/c cause multiple new blocks to form instead of 1
+            // ADD LATER: addDropCtrl() not added to game loop b/c cause multiple new blocks to form instead of 1
         }
     }); 
 
@@ -171,7 +175,7 @@ function gameLoop() {
     if (keyState["ArrowUp"] == true) {
         block.style.top = `${block.offsetTop - PX_HEIGHT}px`;
     }
-    let direction = "bottom"
+    let direction = "left"
     labelCoor(block, direction);
 
     // Add this if you want to update the board coor everytime you resize window, but it slows block movement a LOT
@@ -350,6 +354,55 @@ function collision(direction) {
     return false
 }
 
+// SECTION: set block
+function getBlockCoors(block) {
+    let coors = {
+        "x": [],
+        "y": []
+    }
+
+    for (const px of block.children) {
+        if (px.classList.contains("filled")) {
+            let pxPos = px.getBoundingClientRect();
+
+            // Uses left to unique identify block coor, but any side could be used
+            coors.x.push(pxPos.left);
+            coors.y.push(pxPos.bottom);
+        }
+    }
+
+    console.log(coors);
+    return coors;
+}
+
+function alignCoors(blockCoors, board) {
+    // Cycle through the board
+    for (const cell of board.children) {
+        // If cell x and y = any block coor x and y
+        let cellPos = cell.getBoundingClientRect();
+        for (let i = 0; i < blockCoors.x.length; i++) {
+            console.log(blockCoors.x[i]);
+
+            if (cellPos.left == blockCoors.x[i] && cellPos.bottom == blockCoors.y[i]) {
+                cell.classList.add("closed");
+                console.log("cell closed");
+            }
+        }
+            // Give that cell a "closed" class
+    // Del block since it's now engraved into the board 
+    }
+}
+
+function placeBlock() {
+    let block = document.querySelector(".block");
+    let board = document.querySelector(".board");
+
+    let blockCoors = getBlockCoors(block);
+    alignCoors(blockCoors, board);
+    // block.remove();    
+}
+
+
 
 function main() {
     createBoard();
@@ -361,9 +414,11 @@ function main() {
     // Other Test
     let block = document.querySelector(".block");
     let board = document.querySelector(".board");
-    let direction = "bottom";
+    let direction = "left";
     labelCoor(board, direction);
     labelCoor(block, direction);
+
+    // placeBlock(); 
 
     // getNextBlockCoors(nextBlockCoors, block, board, direction);
     // checkObstacle(nextBlockCoors, board, direction);
