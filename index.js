@@ -233,9 +233,54 @@ function getNextBlockCoors(coorStorage, block, board, direction) {
     console.log(nextBlockCoors);
 }
 
+function checkWall(coorStorage, board, direction) {
+    switch (direction) {
+        case "left":
+            let cellOne = board.children[0];
+            let leftWallCoor = cellOne.getBoundingClientRect()[direction];
+            console.log(leftWallCoor);
+            // Cycle through the coorstorage left's x
+            for (const coor of coorStorage[direction]["x"]) {
+                // If any of them are less than cell 1's clientrect.left
+                if (coor < leftWallCoor) {
+                    // return true b/c there's a wall
+                    return true;
+                }
+            }
+            break;
+        case "right":
+            let cellTen = board.children[9];
+            let rightWallCoor = cellTen.getBoundingClientRect()[direction];
+            console.log(rightWallCoor);
+            for (const coor of coorStorage[direction]["x"]) {
+                if (coor > rightWallCoor) {
+                    return true;
+                }
+            }
+            break;
+        case "bottom":
+            let lastCell = board.children[board.children.length - 1];
+            let bottomWallCoor = lastCell.getBoundingClientRect()[direction];
+            console.log(bottomWallCoor);
+            for (const coor of coorStorage[direction]["y"]) {
+                console.log(coor);
+                if (coor > bottomWallCoor) {
+                    return true;
+                }
+            }
+            break;
+    }
+
+    return false;
+}
+
 function checkObstacle(coorStorage, board, direction) {
     // Cycle through board
     let hasObstacle = false;
+    if (checkWall(coorStorage, board, direction) == true) {
+        return hasObstacle = true;
+    }
+
     for (const cell of board.children) {
         // get cell's bounding rect
         let cellPos = cell.getBoundingClientRect();
