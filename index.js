@@ -128,6 +128,7 @@ function addCtrls() {
     window.addEventListener("keydown", function (e) {
         if (e.key == " ") {
             placeBlock();
+            createBlock();
         }
 
         if (keys.includes(e.key)) {
@@ -399,7 +400,7 @@ function placeBlock() {
 
     let blockCoors = getBlockCoors(block);
     alignCoors(blockCoors, board);
-    // block.remove();    
+    block.remove();    
 }
 
 
