@@ -3,7 +3,7 @@ function closeCell(cellNumArr) {
     for (let i = 0; i < cellNumArr.length; i++) {
         let cell = document.querySelector(`.cell-${cellNumArr[i]}`);
         cell.classList.add("closed");
-        cell.style.backgroundColor = "green";
+        // cell.style.backgroundColor = "green";
     }
 }
 
@@ -44,11 +44,17 @@ let keyState = {
     " ": null
 };
 
+// BOARD INFO
+let TOTAL_COLUMN = 10;
+let TOTAL_ROW = 15;
+
 function createBoard() {
     let board = document.querySelector(".board");
-    let totalColumn = 10;
-    let totalRow = 15;
-    let totalCells = totalColumn * totalRow;
+    // let totalColumn = 10;
+    // let totalRow = 15;
+    // let totalCells = totalColumn * totalRow;
+
+    let totalCells = TOTAL_COLUMN * TOTAL_ROW;
 
     for (let i = 0; i < totalCells; i++) {
         cell = createEleWithCls("div", ["cell", "cell-" + (i + 1)]);
@@ -355,7 +361,7 @@ function collision(direction) {
     return false
 }
 
-// SECTION: set block
+// SECTION: Place block
 function getBlockCoors(block) {
     let coors = {
         "x": [],
@@ -400,14 +406,71 @@ function placeBlock() {
 
     let blockCoors = getBlockCoors(block);
     alignCoors(blockCoors, board);
+
+    // Engrave the block to board itself
     block.remove();    
+}
+
+// SECTION: Clear line
+function checkFullLine(board, rowEndIndex) {
+    for (let i = rowEndIndex; i > rowEndIndex - TOTAL_COLUMN; i--) {
+        // One cell in row not having "closed" class = not a full line
+        if (!board.children[i].classList.contains("closed")) {
+            // console.log(board.children[i]);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function processLineClear(board, rowEndIndex) {
+    for (let i = rowEndIndex; i > rowEndIndex - TOTAL_COLUMN; i--) {
+        console.log(i);
+        // board.children[i].classList.remove("closed");
+    }
+}
+
+// function moveBlocksDown(board) {
+//     // NOTE: you only want to move down the blocks that were above the line that got cleared
+    
+// }
+
+function clearLine(board) {
+    // Cycle starting from the last board cell (since lines are usually at the bottom)
+    // Cycle by 10s since each row is 10 
+    let rowEndIndex = TOTAL_COLUMN * TOTAL_ROW - 1;
+    for (let row = TOTAL_ROW; row > 0; row--) {
+        if (checkFullLine(board, rowEndIndex) == false) {
+            // Go to next row to check
+            rowEndIndex -= TOTAL_COLUMN;
+        }
+        else {
+            processLineClear(board, rowEndIndex);
+            // moveBlocksDown(board);
+        }
+    }
 }
 
 
 
 function main() {
     createBoard();
-    closeCell([26, 18, 46]);
+    closeCell([26, 30, 18, 46]);
+
+    // for (let i = 141; i < 151; i++) {
+    //     closeCell([i]);
+    // }
+
+    for (let i = 65; i < 80; i++) {
+        closeCell([i]);
+    }
+
+
+    for (let i = 106; i < 130; i++) {
+        closeCell([i]);
+    }
+
 
     // These need to reused inside other functions, but is here as test
     createBlock();
@@ -420,6 +483,7 @@ function main() {
     labelCoor(block, direction);
 
     // placeBlock(); 
+    clearLine(board);
 
     // getNextBlockCoors(nextBlockCoors, block, board, direction);
     // checkObstacle(nextBlockCoors, board, direction);
