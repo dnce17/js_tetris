@@ -20,6 +20,12 @@ function labelCoor(item, direction) {
     }
 }
 
+function createObstacle(start, end) {
+    for (let i = start; i < end; i++) {
+        closeCell([i]);
+    }
+}
+
 // REUSABLE
 function createEleWithCls(ele, clsArr) {
     let element = document.createElement(ele);
@@ -57,7 +63,7 @@ function createBoard() {
     let totalCells = TOTAL_COLUMN * TOTAL_ROW;
 
     for (let i = 0; i < totalCells; i++) {
-        cell = createEleWithCls("div", ["cell", "cell-" + (i + 1)]);
+        cell = createEleWithCls("div", ["cell", "cell-" + i]);
         board.appendChild(cell);
     }
 }
@@ -412,8 +418,17 @@ function placeBlock() {
 }
 
 // SECTION: Clear line
-function checkFullLine(board, rowEndIndex) {
-    for (let i = rowEndIndex; i > rowEndIndex - TOTAL_COLUMN; i--) {
+function getRow(lastIndex) {
+    let rowStartEnd = {
+        "start": lastIndex - TOTAL_COLUMN + 1,
+        "end": lastIndex + 1    // not inclusive b/c for loop use
+    }
+
+    return rowStartEnd;
+}
+
+function checkFullLine(board, row) {
+    for (let i = row.start; i < row.end; i++) {
         // One cell in row not having "closed" class = not a full line
         if (!board.children[i].classList.contains("closed")) {
             // console.log(board.children[i]);
@@ -424,52 +439,134 @@ function checkFullLine(board, rowEndIndex) {
     return true;
 }
 
-function processLineClear(board, rowEndIndex) {
-    for (let i = rowEndIndex; i > rowEndIndex - TOTAL_COLUMN; i--) {
-        console.log(i);
-        // board.children[i].classList.remove("closed");
+function processLineClear(board, row) {
+    for (let i = row.start; i < row.end; i++) {
+        board.children[i].classList.remove("closed");
+        board.children[i].classList.add("cleared");
     }
 }
 
-// function moveBlocksDown(board) {
-//     // NOTE: you only want to move down the blocks that were above the line that got cleared
+function processDescendBlocks(rowsToDescend, consecutiveClears) {
+    // console.log(rowsToDescend);
     
-// }
+    let board = document.querySelector(".board");
+
+    for (const row of rowsToDescend) {
+        for (let i = row.start; i < row.end; i++) {
+            // console.log(board.children[i]);
+            if (board.children[i].classList.contains("closed")) {
+                board.children[i].classList.remove("closed");
+                board.children[i + (10 * consecutiveClears)].classList.add("closed");
+            }
+        }
+    }
+}
+
+// CHECKPOINT
+function descendBlocks(row) {
+    // PROCESS: is done piecewise; the blocks b/w two cleared sections will descend first, then the next
+
+    // NOTE:
+        // 2 cleared lines --> the first block section will go down x2.
+        // BUT that means the next block section goes down (amt of lines cleared right below) + (amt of cleared lines below prior block section)
+    //
+
+    let consecutiveClears = 0;
+    let notFullRows = [];
+
+    for (let i = 0; i < row.isFull.length; i++) {
+        // console.log(row.isFull[i]);
+        let fullStatus = row.isFull[i];
+        if (fullStatus == true) {
+
+            if (notFullRows.length > 0) {
+                // console.log(consecutiveClears);
+                // console.log(notFullRows);
+                processDescendBlocks(notFullRows, consecutiveClears);
+            
+                consecutiveClears += 1;
+
+                // Reset b/c first block descension is now finished b/w the two cleared sections
+                notFullRows = [];
+            }
+            else {
+                consecutiveClears += 1;
+            }
+
+        }
+        else {
+            // console.log(row.range[i], i);
+            notFullRows.push(row.range[i]);
+        }
+    }
+
+    // Move the blocks down that have no cleared lines above it
+    processDescendBlocks(notFullRows, consecutiveClears);
+
+    console.log(consecutiveClears);
+    // console.log(notFullRows);
+
+    // console.log(row);
+}
 
 function clearLine(board) {
     // Cycle starting from the last board cell (since lines are usually at the bottom)
     // Cycle by 10s since each row is 10 
     let rowEndIndex = TOTAL_COLUMN * TOTAL_ROW - 1;
+    let rowInfo = {
+        "isFull": [],
+        "range": []
+    }
     for (let row = TOTAL_ROW; row > 0; row--) {
-        if (checkFullLine(board, rowEndIndex) == false) {
+        let rowStartEnd = getRow(rowEndIndex);
+
+        if (checkFullLine(board, rowStartEnd) == false) {
             // Go to next row to check
-            rowEndIndex -= TOTAL_COLUMN;
+            // console.log(`Not full row: ${rowStartEnd.start}, ${rowStartEnd.end}`);
+            rowInfo.isFull.push(false);
         }
         else {
-            processLineClear(board, rowEndIndex);
-            // moveBlocksDown(board);
+            processLineClear(board, rowStartEnd);
+            // console.log(clearedRows);
+            // console.log(`FULL: ${rowStartEnd.start}, ${rowStartEnd.end}`)
+            rowInfo.isFull.push(true);
+            // rowInfo.range.push();
+            // descendBlocks(board);
+            // break;
         }
+
+        rowInfo.range.push(
+            {
+                "start": rowStartEnd.start, 
+                "end": rowStartEnd.end
+            }
+        );
+
+        rowEndIndex -= TOTAL_COLUMN;
     }
+
+    descendBlocks(rowInfo);
+    console.log(rowInfo);
 }
 
 
 
 function main() {
     createBoard();
-    closeCell([26, 30, 18, 46]);
+    // closeCell([26, 30, 18, 46]);
 
     // for (let i = 141; i < 151; i++) {
     //     closeCell([i]);
     // }
 
-    for (let i = 65; i < 80; i++) {
-        closeCell([i]);
-    }
+    createObstacle(30, 39);
+    createObstacle(48, 60);
 
-
-    for (let i = 106; i < 130; i++) {
-        closeCell([i]);
-    }
+    createObstacle(65, 79);
+    createObstacle(80, 100);
+    createObstacle(104, 119);
+    createObstacle(122, 129);
+    createObstacle(130, 150);
 
 
     // These need to reused inside other functions, but is here as test
