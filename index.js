@@ -42,7 +42,7 @@ const PX_WIDTH = 48;
 const PX_HEIGHT = 48;
 const PX_COUNT = 9; // Block is 3x3
 // const BLOCK_BAG = ["Z", "S", "L"];
-const BLOCK_BAG = ["S"];
+const BLOCK_BAG = ["L"];
 let keyState = {
     "ArrowDown": null,
     "ArrowLeft": null,
@@ -101,6 +101,11 @@ function blockTypes() {
              1, 1, 1,
              0, 0, 0],
         ],
+        "O": [
+            [1, 1, 0,
+             1, 1, 0,
+             0, 0, 0],
+        ]
     }
 
     return blocks
@@ -120,9 +125,16 @@ function getBlockType(bag) {
     return blockPxInfo[0]
 }
 
-function createBlock() {
+function createBlock(ghost=false) {
     let tetrisGame = document.querySelector(".tetris-game");
-    let blockCtnr = createEleWithCls("div", ["block"]);
+    let blockCtnr;
+
+    if (ghost == false) {
+        blockCtnr = createEleWithCls("div", ["block"]);
+    }
+    else {
+        blockCtnr = createEleWithCls("div", ["block", "ghost"]);
+    }
 
     tetrisGame.prepend(blockCtnr);
     defaultBlock = getBlockType(BLOCK_BAG);
@@ -140,7 +152,11 @@ function addCtrls() {
     window.addEventListener("keydown", function (e) {
         if (e.key == " ") {
             placeBlock();
+            createBlock(true);
             createBlock();
+
+            setGhostPos();
+            
         }
 
         if (keys.includes(e.key)) {
@@ -161,12 +177,14 @@ function addCtrls() {
 
 function gameLoop() {
     let block = document.querySelector(".block");
+    let ghost = document.querySelector(".ghost");
     
     if (keyState["ArrowDown"] == true) {
         // block.style.top = `${block.offsetTop + PX_HEIGHT}px`;
 
         if (collision("bottom") == false) {
             block.style.top = `${block.offsetTop + PX_HEIGHT}px`;
+            // ghost.style.top = `${ghost.offsetTop + PX_HEIGHT}px`;
         }
     }    
     if (keyState["ArrowLeft"] == true) {
@@ -174,6 +192,8 @@ function gameLoop() {
 
         if (collision("left") == false) {
             block.style.left = `${block.offsetLeft - PX_WIDTH}px`;
+            setGhostPos(block.style.left);
+            // ghost.style.left = `${ghost.offsetLeft - PX_WIDTH}px`;
         }
     }
     if (keyState["ArrowRight"] == true) {
@@ -181,12 +201,15 @@ function gameLoop() {
 
         if (collision("right") == false) {
             block.style.left = `${block.offsetLeft + PX_WIDTH}px`;
+            setGhostPos(block.style.left);
+            // ghost.style.left = `${ghost.offsetLeft + PX_WIDTH}px`;
         }
     }
 
     // TEST USE ONLY
     if (keyState["ArrowUp"] == true) {
         block.style.top = `${block.offsetTop - PX_HEIGHT}px`;
+        // ghost.style.top = `${ghost.offsetTop - PX_HEIGHT}px`;
     }
     let direction = "left"
     labelCoor(block, direction);
@@ -246,8 +269,8 @@ function getNextBlockCoors(coorStorage, block, board, direction) {
     for (let i = 0; i < coorStorage[direction]["x"].length; i++) {
         allCoor.push(`(${coorStorage[direction]["x"][i]}, ${coorStorage[direction]["y"][i]})`);
     }
-    console.log(allCoor);
-    console.log(nextBlockCoors);
+    // console.log(allCoor);
+    // console.log(nextBlockCoors);
 }
 
 function checkWall(coorStorage, board, direction) {
@@ -278,9 +301,9 @@ function checkWall(coorStorage, board, direction) {
         case "bottom":
             let lastCell = board.children[board.children.length - 1];
             let bottomWallCoor = lastCell.getBoundingClientRect()[direction];
-            console.log(bottomWallCoor);
+            // console.log(bottomWallCoor);
             for (const coor of coorStorage[direction]["y"]) {
-                console.log(coor);
+                // console.log(coor);
                 if (coor > bottomWallCoor) {
                     return true;
                 }
@@ -324,12 +347,12 @@ function checkObstacle(coorStorage, board, direction) {
             if (direction == "bottom") {
                 // Diff is y == cellPos[direction], not x
                 if (y == cellPos[direction] && x == cellPos.left) {
-                    console.log("MATCHED BELOW");
-                    console.log(direction + ": (" + x + "," + y + ")");
+                    // console.log("MATCHED BELOW");
+                    // console.log(direction + ": (" + x + "," + y + ")");
                     if (cell.classList.contains("closed")) {
-                        console.log(cell);
+                        // console.log(cell);
                         hasObstacle = true;
-                        console.log(`bottom: ${hasObstacle}`);
+                        // console.log(`bottom: ${hasObstacle}`);
                         return hasObstacle = true;
                     }
                 }
@@ -349,8 +372,14 @@ function resetCoors(coorStorage) {
     }
 }
 
-function collision(direction) {
-    let block = document.querySelector(".block");
+function collision(direction, ghost=false) {
+    let block;
+    if (ghost == false) {
+        block = document.querySelector(".block");
+    }
+    else {
+        block = document.querySelector(".ghost");
+    }
     let board = document.querySelector(".board");
 
     getNextBlockCoors(nextBlockCoors, block, board, direction);
@@ -408,6 +437,7 @@ function alignCoors(blockCoors, board) {
 
 function placeBlock() {
     let block = document.querySelector(".block");
+    let ghost = document.querySelector(".ghost");
     let board = document.querySelector(".board");
 
     let blockCoors = getBlockCoors(block);
@@ -415,6 +445,7 @@ function placeBlock() {
 
     // Engrave the block to board itself
     block.remove();    
+    ghost.remove();
 }
 
 // SECTION: Clear line
@@ -503,15 +534,16 @@ function descendBlocks(row) {
     // Move the blocks down that have no cleared lines above it
     processDescendBlocks(notFullRows, consecutiveClears);
 
-    console.log(consecutiveClears);
+    // console.log(consecutiveClears);
     // console.log(notFullRows);
 
     // console.log(row);
 }
 
-function clearLine(board) {
+function clearFullLines() {
     // Cycle starting from the last board cell (since lines are usually at the bottom)
     // Cycle by 10s since each row is 10 
+    let board = document.querySelector(".board");
     let rowEndIndex = TOTAL_COLUMN * TOTAL_ROW - 1;
     let rowInfo = {
         "isFull": [],
@@ -546,7 +578,73 @@ function clearLine(board) {
     }
 
     descendBlocks(rowInfo);
-    console.log(rowInfo);
+    // console.log(rowInfo);
+}
+
+function processGhostPos(ghost) {
+    while (true) {
+        if (collision("bottom", true) == false) {
+            ghost.style.top = `${ghost.offsetTop + PX_HEIGHT}px`;
+        }
+        else {
+            break;
+        }
+    }
+}
+
+
+function setGhostPos(blockXPos) {
+    let ghost = document.querySelector(".ghost");
+    let block = document.querySelector(".block");
+
+    // Reset the ghost position to very top
+    // BUG: if you squeeze in a block b/w 2 blocks, the ghost will be above the block
+        // HENCE, make the ghost.top opacity 0 whenever the ghost.top coor is greater than the block, then remove it if not
+        // However, if there is more down space even b/w 2 blocks, the ghost won't appear anymore
+            // In this case, should the block be b/w two set block, have the ghost start at the block's top coor and then go down until collision
+
+    // let ghostTop = ghost.getBoundingClientRect().top;
+    // let blockTop = block.getBoundingClientRect().top;
+
+
+    ghost.style.top = "0px";
+    ghost.style.left = blockXPos;
+
+    // Then have it fall down
+    processGhostPos(ghost);
+    // while (true) {
+    //     if (collision("bottom", true) == false) {
+    //         ghost.style.top = `${ghost.offsetTop + PX_HEIGHT}px`;
+    //     }
+    //     else {
+    //         break;
+    //     }
+    // }
+    
+
+    let ghostTop = ghost.getBoundingClientRect().top;
+    let blockTop = block.getBoundingClientRect().top;
+    // console.log(`Ghost: ${ghostTop}`);
+    // console.log(`Block: ${blockTop}`);
+
+    if (ghostTop < blockTop) {
+        console.log(`Ghost: ${ghostTop}`);
+        console.log(`Block: ${blockTop}`);
+        ghost.style.top = block.style.top;
+        processGhostPos(ghost);
+    }
+    else {
+        console.log(`Ghost: ${ghostTop}`);
+        console.log(`Block: ${blockTop}`);
+    }
+
+
+    // if (ghostTop < blockTop) {
+    //     ghost.classList.add("hidden");
+    // }
+    // else {
+    //     ghost.classList.remove("hidden");
+    // }
 }
 
 
@@ -559,8 +657,10 @@ function main() {
     //     closeCell([i]);
     // }
 
-    createObstacle(30, 39);
-    createObstacle(48, 60);
+    // createObstacle(30, 39);
+    // createObstacle(48, 60);
+
+    createObstacle(62, 64);
 
     createObstacle(65, 79);
     createObstacle(80, 100);
@@ -570,7 +670,9 @@ function main() {
 
 
     // These need to reused inside other functions, but is here as test
+    createBlock(true);
     createBlock();
+    setGhostPos();
 
     // Other Test
     let block = document.querySelector(".block");
@@ -580,7 +682,7 @@ function main() {
     labelCoor(block, direction);
 
     // placeBlock(); 
-    clearLine(board);
+    // clearFullLines();
 
     // getNextBlockCoors(nextBlockCoors, block, board, direction);
     // checkObstacle(nextBlockCoors, board, direction);

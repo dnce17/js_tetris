@@ -83,3 +83,7 @@ body {
 .closed {
     background-color: aqua;
 }
+
+.ghost {
+    opacity: 0.5;
+}
