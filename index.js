@@ -41,8 +41,8 @@ function createEleWithCls(ele, clsArr) {
 const PX_WIDTH = 48;
 const PX_HEIGHT = 48;
 const PX_COUNT = 9; // Block is 3x3
-// const BLOCK_BAG = ["Z", "S", "L"];
-const BLOCK_BAG = ["L"];
+// const BLOCK_BAG = ["Z", "S", "L", "O"];
+const BLOCK_BAG = ["S"];
 let keyState = {
     "ArrowDown": null,
     "ArrowLeft": null,
@@ -430,8 +430,29 @@ function alignCoors(blockCoors, board) {
                 console.log("cell closed");
             }
         }
-            // Give that cell a "closed" class
-    // Del block since it's now engraved into the board 
+    }
+}
+
+function matchBlockToGhost(board, ghost) {
+    // Place block where ghost is
+
+    // remove and put as parameter later
+    // let block = document.querySelector(".block");
+    // let ghost = document.querySelector(".ghost");
+    // let board = document.querySelector(".board");
+
+    for (let px of ghost.children) {
+        if (px.classList.contains("filled")) {
+            let pxPos = px.getBoundingClientRect();
+            for (let cell of board.children) {
+                let cellPos = cell.getBoundingClientRect();
+
+                if (pxPos.left == cellPos.left && pxPos.bottom == cellPos.bottom) {
+                    cell.classList.add("closed");
+                    // console.log(cell);
+                }
+            }      
+        }
     }
 }
 
@@ -441,9 +462,11 @@ function placeBlock() {
     let board = document.querySelector(".board");
 
     let blockCoors = getBlockCoors(block);
-    alignCoors(blockCoors, board);
 
     // Engrave the block to board itself
+    // alignCoors(blockCoors, board);
+    matchBlockToGhost(board, ghost);
+
     block.remove();    
     ghost.remove();
 }
@@ -612,20 +635,10 @@ function setGhostPos(blockXPos) {
 
     // Then have it fall down
     processGhostPos(ghost);
-    // while (true) {
-    //     if (collision("bottom", true) == false) {
-    //         ghost.style.top = `${ghost.offsetTop + PX_HEIGHT}px`;
-    //     }
-    //     else {
-    //         break;
-    //     }
-    // }
     
 
     let ghostTop = ghost.getBoundingClientRect().top;
     let blockTop = block.getBoundingClientRect().top;
-    // console.log(`Ghost: ${ghostTop}`);
-    // console.log(`Block: ${blockTop}`);
 
     if (ghostTop < blockTop) {
         console.log(`Ghost: ${ghostTop}`);
@@ -637,14 +650,6 @@ function setGhostPos(blockXPos) {
         console.log(`Ghost: ${ghostTop}`);
         console.log(`Block: ${blockTop}`);
     }
-
-
-    // if (ghostTop < blockTop) {
-    //     ghost.classList.add("hidden");
-    // }
-    // else {
-    //     ghost.classList.remove("hidden");
-    // }
 }
 
 
@@ -660,9 +665,9 @@ function main() {
     // createObstacle(30, 39);
     // createObstacle(48, 60);
 
-    createObstacle(62, 64);
+    // createObstacle(62, 64);
 
-    createObstacle(65, 79);
+    createObstacle(66, 79);
     createObstacle(80, 100);
     createObstacle(104, 119);
     createObstacle(122, 129);
