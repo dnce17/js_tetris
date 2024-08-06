@@ -56,14 +56,10 @@ let TOTAL_ROW = 15;
 
 function createBoard() {
     let board = document.querySelector(".board");
-    // let totalColumn = 10;
-    // let totalRow = 15;
-    // let totalCells = totalColumn * totalRow;
-
     let totalCells = TOTAL_COLUMN * TOTAL_ROW;
 
     for (let i = 0; i < totalCells; i++) {
-        cell = createEleWithCls("div", ["cell", "cell-" + i]);
+        let cell = createEleWithCls("div", ["cell", "cell-" + i]);
         board.appendChild(cell);
     }
 }
@@ -111,37 +107,26 @@ function blockTypes() {
     return blocks
 }
 
-function randomizeBag(bag, totalBlockCount) {
-    val = Math.floor(Math.random() * totalBlockCount);
-    block = bag[val];
+function getRandomBlock(bag) {
+    let strucData = blockTypes();
+    let val = Math.floor(Math.random() * bag.length);
 
-    return block
+    let block = bag[val];
+    let defaultBlock = strucData[block][0]  // Default = non-rotated block
+
+    return defaultBlock
 }
 
-function getBlockType(bag) {
-    block = randomizeBag(bag, bag.length);
-    blockPxInfo = blockTypes()[block];
-
-    return blockPxInfo[0]
-}
-
-function createBlock(ghost=false) {
+function createPiece(ghostStatus=false) {
     let tetrisGame = document.querySelector(".tetris-game");
-    let blockCtnr;
+    let pieceCtnr = createEleWithCls("div", ghostStatus ? ["ghost"] : ["block"]);
 
-    if (ghost == false) {
-        blockCtnr = createEleWithCls("div", ["block"]);
-    }
-    else {
-        blockCtnr = createEleWithCls("div", ["block", "ghost"]);
-    }
+    tetrisGame.prepend(pieceCtnr);
+    let block = getRandomBlock(BLOCK_BAG);
 
-    tetrisGame.prepend(blockCtnr);
-    defaultBlock = getBlockType(BLOCK_BAG);
-
-    for (let i = 0; i < defaultBlock.length; i++) {
-        let px = defaultBlock[i] == 0 ? createEleWithCls("div", ["px"]) : createEleWithCls("div", ["px", "filled"]);
-        blockCtnr.appendChild(px);
+    for (let i = 0; i < block.length; i++) {
+        let px = block[i] == 0 ? createEleWithCls("div", ["px"]) : createEleWithCls("div", ["px", "filled"]);
+        pieceCtnr.appendChild(px);
     }
 }
 
@@ -152,8 +137,8 @@ function addCtrls() {
     window.addEventListener("keydown", function (e) {
         if (e.key == " ") {
             placeBlock();
-            createBlock(true);
-            createBlock();
+            createPiece(true);
+            createPiece();
 
             setGhostPos();
             
@@ -619,7 +604,6 @@ function processGhostPos(ghost) {
 function setGhostPos(blockXPos) {
     let ghost = document.querySelector(".ghost");
     let block = document.querySelector(".block");
-
     // Reset the ghost position to very top
     // BUG: if you squeeze in a block b/w 2 blocks, the ghost will be above the block
         // HENCE, make the ghost.top opacity 0 whenever the ghost.top coor is greater than the block, then remove it if not
@@ -675,8 +659,8 @@ function main() {
 
 
     // These need to reused inside other functions, but is here as test
-    createBlock(true);
-    createBlock();
+    createPiece(true);
+    createPiece();
     setGhostPos();
 
     // Other Test

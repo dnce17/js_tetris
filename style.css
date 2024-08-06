@@ -17,7 +17,7 @@ body {
     transform: translate(-50%, -50%)
 }
 
-.block, .set-block {
+.block, .ghost, .set-block {
     position: absolute;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -67,7 +67,7 @@ body {
 
 
 /* TEST USE */
-.block {
+.block, .ghost {
     left: 96px;
     /* top: 24px; */
 }
