@@ -130,51 +130,48 @@ function createPiece(ghostStatus=false) {
     }
 }
 
+// CLEANUP CP
 // SECTION: game controls
+function activateDropCtrls() {
+    placeBlock();
+    clearFullLines();
+    createPiece(true);
+    createPiece();
+    setGhostPos();
+}
+
 function addCtrls() {
     let keys = ["ArrowDown", "ArrowLeft", "ArrowRight", " ", "ArrowUp"];
 
-    window.addEventListener("keydown", function (e) {
+    window.addEventListener("keydown", function(e) {
         if (e.key == " ") {
-            placeBlock();
-            createPiece(true);
-            createPiece();
-
-            setGhostPos();
-            
+            activateDropCtrls();
         }
 
         if (keys.includes(e.key)) {
             keyState[e.key] = true;
-            // console.log(`keydown: ${e.key}, ${keyState[e.key]}`);
-
-            // ADD LATER: addDropCtrl() not added to game loop b/c cause multiple new blocks to form instead of 1
         }
     }); 
 
     window.addEventListener("keyup", function(e) {
         if (keys.includes(e.key)) {
             keyState[e.key] = false;
-            // console.log(`keyup: ${e.key}, ${keyState[e.key]}`);
         }
     })
 }
 
+// CODE CLEAN UP for this will be done after all features are done
 function gameLoop() {
     let block = document.querySelector(".block");
     let ghost = document.querySelector(".ghost");
     
     if (keyState["ArrowDown"] == true) {
-        // block.style.top = `${block.offsetTop + PX_HEIGHT}px`;
-
         if (collision("bottom") == false) {
             block.style.top = `${block.offsetTop + PX_HEIGHT}px`;
             // ghost.style.top = `${ghost.offsetTop + PX_HEIGHT}px`;
         }
     }    
     if (keyState["ArrowLeft"] == true) {
-        // block.style.left = `${block.offsetLeft - PX_WIDTH}px`;
-
         if (collision("left") == false) {
             block.style.left = `${block.offsetLeft - PX_WIDTH}px`;
             setGhostPos(block.style.left);
@@ -182,8 +179,6 @@ function gameLoop() {
         }
     }
     if (keyState["ArrowRight"] == true) {
-        // block.style.left = `${block.offsetLeft + PX_WIDTH}px`;
-
         if (collision("right") == false) {
             block.style.left = `${block.offsetLeft + PX_WIDTH}px`;
             setGhostPos(block.style.left);
@@ -196,12 +191,15 @@ function gameLoop() {
         block.style.top = `${block.offsetTop - PX_HEIGHT}px`;
         // ghost.style.top = `${ghost.offsetTop - PX_HEIGHT}px`;
     }
+
     let direction = "left"
     labelCoor(block, direction);
 
-    // Add this if you want to update the board coor everytime you resize window, but it slows block movement a LOT
+    // Add this IF you want to update the board coor everytime you resize window, but it slows block movement a LOT
     // let board = document.querySelector(".board");
     // labelCoor(board, direction);
+    // ------TEST USE END--------
+
 
     // Controls speed that block moves
     setTimeout(gameLoop, 30);
