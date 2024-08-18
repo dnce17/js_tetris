@@ -1,4 +1,5 @@
-// TEST USE: Create obstacles for block collision test
+// TEST USE FUNCS 
+// Create obstacles for block collision test
 function closeCell(cellNumArr) {
     for (let i = 0; i < cellNumArr.length; i++) {
         let cell = document.querySelector(`.cell-${cellNumArr[i]}`);
@@ -23,6 +24,38 @@ function labelCoor(item, direction) {
 function createObstacle(start, end) {
     for (let i = start; i < end; i++) {
         closeCell([i]);
+    }
+}
+
+// getBlockCoors + alignCoors used as test in place block section
+function getBlockCoors(block) {
+    let coors = {
+        "x": [],
+        "y": []
+    }
+
+    for (const px of block.children) {
+        if (px.classList.contains("filled")) {
+            let pxPos = px.getBoundingClientRect();
+
+            // Unique identifies block coor (x, y)
+            coors.x.push(pxPos.left);
+            coors.y.push(pxPos.bottom);
+        }
+    }
+
+    return coors;
+}
+
+function alignCoors(blockCoors, board) {
+    for (const cell of board.children) {
+        let cellPos = cell.getBoundingClientRect();
+        for (let i = 0; i < blockCoors.x.length; i++) {
+            // Check if CELL x, y == any BLOCK x,y
+            if (cellPos.left == blockCoors.x[i] && cellPos.bottom == blockCoors.y[i]) {
+                cell.classList.add("closed");
+            }
+        }
     }
 }
 
@@ -400,38 +433,6 @@ function collision(direction, ghost=false) {
 }
 
 // SECTION: Place block
-function getBlockCoors(block) {
-    let coors = {
-        "x": [],
-        "y": []
-    }
-
-    for (const px of block.children) {
-        if (px.classList.contains("filled")) {
-            let pxPos = px.getBoundingClientRect();
-
-            // Uses left and bottom to unique identify block coor (x, y)
-            coors.x.push(pxPos.left);
-            coors.y.push(pxPos.bottom);
-        }
-    }
-
-    return coors;
-}
-
-function alignCoors(blockCoors, board) {
-    for (const cell of board.children) {
-        let cellPos = cell.getBoundingClientRect();
-        for (let i = 0; i < blockCoors.x.length; i++) {
-            // Check if CELL x, y == any BLOCK x,y
-            if (cellPos.left == blockCoors.x[i] && cellPos.bottom == blockCoors.y[i]) {
-                cell.classList.add("closed");
-            }
-        }
-    }
-}
-
-// THIS MAY BE UNNEDEED?
 function matchBlockToGhost(board, ghost) {
     // Place block where ghost is
     for (let px of ghost.children) {
@@ -442,7 +443,6 @@ function matchBlockToGhost(board, ghost) {
 
                 if (pxPos.left == cellPos.left && pxPos.bottom == cellPos.bottom) {
                     cell.classList.add("closed");
-                    // console.log(cell);
                 }
             }      
         }
@@ -454,10 +454,11 @@ function placeBlock() {
     let ghost = document.querySelector(".ghost");
     let board = document.querySelector(".board");
 
-    let blockCoors = getBlockCoors(block);
+    // TEST USE: lets you place block anywhere, not just where ghost is
+    // let blockCoors = getBlockCoors(block);
+    // alignCoors(blockCoors, board);
 
     // Engrave the block to board itself
-    // alignCoors(blockCoors, board);
     matchBlockToGhost(board, ghost);
 
     block.remove();    
