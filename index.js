@@ -64,7 +64,7 @@ function createBoard() {
     }
 }
 
-// SECTION: Create randomized block
+// SECTION: Create randomized block + ghost
 function blockTypes() {
     let blocks = {
         "Z": [
@@ -127,6 +127,26 @@ function createPiece(ghostStatus=false) {
     for (let i = 0; i < block.length; i++) {
         let px = block[i] == 0 ? createEleWithCls("div", ["px"]) : createEleWithCls("div", ["px", "filled"]);
         pieceCtnr.appendChild(px);
+    }
+}
+
+function setGhostPos(blockXPos) {
+    let ghost = document.querySelector(".ghost");
+    let block = document.querySelector(".block");    
+
+    ghost.style.top = block.style.top;
+    ghost.style.left = blockXPos;
+    processGhostPos(ghost);
+}
+
+function processGhostPos(ghost) {
+    while (true) {
+        if (collision("bottom", true) == false) {
+            ghost.style.top = `${ghost.offsetTop + PX_HEIGHT}px`;
+        }
+        else {
+            break;
+        }
     }
 }
 
@@ -390,40 +410,30 @@ function getBlockCoors(block) {
         if (px.classList.contains("filled")) {
             let pxPos = px.getBoundingClientRect();
 
-            // Uses left to unique identify block coor, but any side could be used
+            // Uses left and bottom to unique identify block coor (x, y)
             coors.x.push(pxPos.left);
             coors.y.push(pxPos.bottom);
         }
     }
 
-    console.log(coors);
     return coors;
 }
 
 function alignCoors(blockCoors, board) {
-    // Cycle through the board
     for (const cell of board.children) {
-        // If cell x and y = any block coor x and y
         let cellPos = cell.getBoundingClientRect();
         for (let i = 0; i < blockCoors.x.length; i++) {
-            console.log(blockCoors.x[i]);
-
+            // Check if CELL x, y == any BLOCK x,y
             if (cellPos.left == blockCoors.x[i] && cellPos.bottom == blockCoors.y[i]) {
                 cell.classList.add("closed");
-                console.log("cell closed");
             }
         }
     }
 }
 
+// THIS MAY BE UNNEDEED?
 function matchBlockToGhost(board, ghost) {
     // Place block where ghost is
-
-    // remove and put as parameter later
-    // let block = document.querySelector(".block");
-    // let ghost = document.querySelector(".ghost");
-    // let board = document.querySelector(".board");
-
     for (let px of ghost.children) {
         if (px.classList.contains("filled")) {
             let pxPos = px.getBoundingClientRect();
@@ -586,55 +596,6 @@ function clearFullLines() {
     descendBlocks(rowInfo);
     // console.log(rowInfo);
 }
-
-function processGhostPos(ghost) {
-    while (true) {
-        if (collision("bottom", true) == false) {
-            ghost.style.top = `${ghost.offsetTop + PX_HEIGHT}px`;
-        }
-        else {
-            break;
-        }
-    }
-}
-
-
-function setGhostPos(blockXPos) {
-    let ghost = document.querySelector(".ghost");
-    let block = document.querySelector(".block");
-    // Reset the ghost position to very top
-    // BUG: if you squeeze in a block b/w 2 blocks, the ghost will be above the block
-        // HENCE, make the ghost.top opacity 0 whenever the ghost.top coor is greater than the block, then remove it if not
-        // However, if there is more down space even b/w 2 blocks, the ghost won't appear anymore
-            // In this case, should the block be b/w two set block, have the ghost start at the block's top coor and then go down until collision
-
-    // let ghostTop = ghost.getBoundingClientRect().top;
-    // let blockTop = block.getBoundingClientRect().top;
-
-
-    ghost.style.top = "0px";
-    ghost.style.left = blockXPos;
-
-    // Then have it fall down
-    processGhostPos(ghost);
-    
-
-    let ghostTop = ghost.getBoundingClientRect().top;
-    let blockTop = block.getBoundingClientRect().top;
-
-    if (ghostTop < blockTop) {
-        console.log(`Ghost: ${ghostTop}`);
-        console.log(`Block: ${blockTop}`);
-        ghost.style.top = block.style.top;
-        processGhostPos(ghost);
-    }
-    else {
-        console.log(`Ghost: ${ghostTop}`);
-        console.log(`Block: ${blockTop}`);
-    }
-}
-
-
 
 function main() {
     createBoard();
