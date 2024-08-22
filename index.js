@@ -433,22 +433,6 @@ function collision(direction, ghost=false) {
 }
 
 // SECTION: Place block
-function matchBlockToGhost(board, ghost) {
-    // Place block where ghost is
-    for (let px of ghost.children) {
-        if (px.classList.contains("filled")) {
-            let pxPos = px.getBoundingClientRect();
-            for (let cell of board.children) {
-                let cellPos = cell.getBoundingClientRect();
-
-                if (pxPos.left == cellPos.left && pxPos.bottom == cellPos.bottom) {
-                    cell.classList.add("closed");
-                }
-            }      
-        }
-    }
-}
-
 function placeBlock() {
     let block = document.querySelector(".block");
     let ghost = document.querySelector(".ghost");
@@ -465,7 +449,60 @@ function placeBlock() {
     ghost.remove();
 }
 
+function matchBlockToGhost(board, ghost) {
+    // Place block where ghost is
+    for (let px of ghost.children) {
+        if (px.classList.contains("filled")) {
+            let pxPos = px.getBoundingClientRect();
+            for (let cell of board.children) {
+                let cellPos = cell.getBoundingClientRect();
+
+                if (pxPos.left == cellPos.left && pxPos.bottom == cellPos.bottom) {
+                    cell.classList.add("closed");
+                }
+            }      
+        }
+    }
+}
+
 // SECTION: Clear line
+function clearFullLines() {
+    let board = document.querySelector(".board");
+    let rowEndIndex = TOTAL_COLUMN * TOTAL_ROW - 1;
+    let rowInfo = {
+        "isFull": [],
+        "range": []
+    }
+
+    // Cycles from last row up (since lines will generally be at bottom)
+    for (let row = TOTAL_ROW; row > 0; row--) {
+        let rowStartEnd = getRow(rowEndIndex);
+
+        // Tracks if each row is full line & clears row if full line
+        if (checkFullLine(board, rowStartEnd) == false) {
+            rowInfo.isFull.push(false);
+        }
+        else {
+            processLineClear(board, rowStartEnd);
+            rowInfo.isFull.push(true);
+        }
+
+        // Track each row's index range
+        rowInfo.range.push(
+            {
+                "start": rowStartEnd.start, 
+                "end": rowStartEnd.end
+            }
+        );
+        
+        // Goes to next row's end index
+        rowEndIndex -= TOTAL_COLUMN;
+    }
+
+    // Move all blocks down after line clear
+    descendBlocks(rowInfo);
+}
+
 function getRow(lastIndex) {
     let rowStartEnd = {
         "start": lastIndex - TOTAL_COLUMN + 1,
@@ -477,9 +514,8 @@ function getRow(lastIndex) {
 
 function checkFullLine(board, row) {
     for (let i = row.start; i < row.end; i++) {
-        // One cell in row not having "closed" class = not a full line
+        // Any cell in a row with no "closed" class == row not full line
         if (!board.children[i].classList.contains("closed")) {
-            // console.log(board.children[i]);
             return false;
         }
     }
@@ -494,47 +530,26 @@ function processLineClear(board, row) {
     }
 }
 
-function processDescendBlocks(rowsToDescend, consecutiveClears) {
-    // console.log(rowsToDescend);
-    
-    let board = document.querySelector(".board");
-
-    for (const row of rowsToDescend) {
-        for (let i = row.start; i < row.end; i++) {
-            // console.log(board.children[i]);
-            if (board.children[i].classList.contains("closed")) {
-                board.children[i].classList.remove("closed");
-                board.children[i + (10 * consecutiveClears)].classList.add("closed");
-            }
-        }
-    }
-}
-
-// CHECKPOINT
 function descendBlocks(row) {
-    // PROCESS: is done piecewise; the blocks b/w two cleared sections will descend first, then the next
+    // PROCESS: is done piecewise; the rows b/w two cleared sections will descend first, then the next
 
     // NOTE:
-        // 2 cleared lines --> the first block section will go down x2.
-        // BUT that means the next block section goes down (amt of lines cleared right below) + (amt of cleared lines below prior block section)
+        // 2 cleared lines means the 1st section of "not full" rows will go down x2.
+        // BUT that means the next "not full" row section goes down (amt of lines cleared just below) + (amt of lines cleared below the prior block sections)
     //
 
     let consecutiveClears = 0;
     let notFullRows = [];
 
+    // Only descends row sections that had full/cleared lines above and below it
     for (let i = 0; i < row.isFull.length; i++) {
-        // console.log(row.isFull[i]);
         let fullStatus = row.isFull[i];
         if (fullStatus == true) {
-
             if (notFullRows.length > 0) {
-                // console.log(consecutiveClears);
-                // console.log(notFullRows);
                 processDescendBlocks(notFullRows, consecutiveClears);
-            
                 consecutiveClears += 1;
-
-                // Reset b/c first block descension is now finished b/w the two cleared sections
+                
+                // Reset b/c initial row section descension is now complete b/w two cleared sections
                 notFullRows = [];
             }
             else {
@@ -543,59 +558,25 @@ function descendBlocks(row) {
 
         }
         else {
-            // console.log(row.range[i], i);
             notFullRows.push(row.range[i]);
         }
     }
 
-    // Move the blocks down that have no cleared lines above it
+    // Descends topmost row section that had no full/cleared lines above it
     processDescendBlocks(notFullRows, consecutiveClears);
-
-    // console.log(consecutiveClears);
-    // console.log(notFullRows);
-
-    // console.log(row);
 }
 
-function clearFullLines() {
-    // Cycle starting from the last board cell (since lines are usually at the bottom)
-    // Cycle by 10s since each row is 10 
+function processDescendBlocks(rowsToDescend, consecutiveClears) {
     let board = document.querySelector(".board");
-    let rowEndIndex = TOTAL_COLUMN * TOTAL_ROW - 1;
-    let rowInfo = {
-        "isFull": [],
-        "range": []
-    }
-    for (let row = TOTAL_ROW; row > 0; row--) {
-        let rowStartEnd = getRow(rowEndIndex);
-
-        if (checkFullLine(board, rowStartEnd) == false) {
-            // Go to next row to check
-            // console.log(`Not full row: ${rowStartEnd.start}, ${rowStartEnd.end}`);
-            rowInfo.isFull.push(false);
-        }
-        else {
-            processLineClear(board, rowStartEnd);
-            // console.log(clearedRows);
-            // console.log(`FULL: ${rowStartEnd.start}, ${rowStartEnd.end}`)
-            rowInfo.isFull.push(true);
-            // rowInfo.range.push();
-            // descendBlocks(board);
-            // break;
-        }
-
-        rowInfo.range.push(
-            {
-                "start": rowStartEnd.start, 
-                "end": rowStartEnd.end
+    for (const row of rowsToDescend) {
+        for (let i = row.start; i < row.end; i++) {
+            if (board.children[i].classList.contains("closed")) {
+                board.children[i].classList.remove("closed");
+                // Calculate new block's position
+                board.children[i + (10 * consecutiveClears)].classList.add("closed");
             }
-        );
-
-        rowEndIndex -= TOTAL_COLUMN;
+        }
     }
-
-    descendBlocks(rowInfo);
-    // console.log(rowInfo);
 }
 
 function main() {
