@@ -59,7 +59,7 @@ function alignCoors(blockCoors, board) {
     }
 }
 
-// REUSABLE
+// REUSABLES
 function createEleWithCls(ele, clsArr) {
     let element = document.createElement(ele);
 
@@ -68,6 +68,14 @@ function createEleWithCls(ele, clsArr) {
     }
 
     return element;
+}
+
+function checkClsExist(variable, clsName) {
+    if (variable.classList.contains(clsName)) {
+        return true
+    }
+    
+    return false
 }
 
 // TETRIS BLOCK INFO
@@ -275,105 +283,108 @@ let nextBlockCoors = {
     },
 }
 
-function getNextBlockCoors(coorStorage, block, board, direction) {
-    // For each px in block
-    for (const px of block.children) {
-        // If px has "filled" class
-        if (px.classList.contains("filled")) {
-            // Save the coor of px client rect left/right/bottom (depending on direction) + 24 in storage to get nextStorageCoor
-            let pxPos = px.getBoundingClientRect();
-            switch (direction) {
-                case "left":
-                    coorStorage.left.x.push(pxPos.left - PX_WIDTH);
-                    coorStorage.left.y.push(pxPos.bottom);
-                    break;
-                case "right":
-                    coorStorage.right.x.push(pxPos.right + PX_WIDTH);
-                    coorStorage.right.y.push(pxPos.bottom);
-                    break;
+function processCoorStorage(coorStorage, pxPos, direction) {
+    switch (direction) {
+        case "left":
+            coorStorage.left.x.push(pxPos.left - PX_WIDTH);
+            coorStorage.left.y.push(pxPos.bottom);
+            break;
+        case "right":
+            coorStorage.right.x.push(pxPos.right + PX_WIDTH);
+            coorStorage.right.y.push(pxPos.bottom);
+            break;
 
-                // Different from left/right
-                case "bottom":
-                    coorStorage.bottom.y.push(pxPos.bottom + PX_HEIGHT);
-                    coorStorage.bottom.x.push(pxPos.left);
-                    break;
-            }
+        // Different from left/right
+        case "bottom":
+            coorStorage.bottom.y.push(pxPos.bottom + PX_HEIGHT);
+            coorStorage.bottom.x.push(pxPos.left);
+            break;
+    }
+}
+
+function storeTargetCoors(coorStorage, block, board, direction) {
+    for (const px of block.children) {
+        if (px.classList.contains("filled")) {
+            // Save coors of px client rect left/right/bottom (depending on direction) + 24 in storage to get nextStorageCoor
+            let pxPos = px.getBoundingClientRect();
+            processCoorStorage(coorStorage, pxPos, direction);
         }
     }
-
-    let allCoor = []
-    for (let i = 0; i < coorStorage[direction]["x"].length; i++) {
-        allCoor.push(`(${coorStorage[direction]["x"][i]}, ${coorStorage[direction]["y"][i]})`);
-    }
-    // console.log(allCoor);
-    // console.log(nextBlockCoors);
 }
 
 function checkWall(coorStorage, board, direction) {
-    switch (direction) {
-        case "left":
-            let cellOne = board.children[0];
-            let leftWallCoor = cellOne.getBoundingClientRect()[direction];
-            console.log(leftWallCoor);
-            // Cycle through the coorstorage left's x
-            for (const coor of coorStorage[direction]["x"]) {
-                // If any of them are less than cell 1's clientrect.left
-                if (coor < leftWallCoor) {
-                    // return true b/c there's a wall
+    let wallCoor = getWallCoor(board, direction);
+    let axis = getAxis(direction);    
+
+    for (const coor of coorStorage[direction][axis]) {
+        switch (direction) {
+            case "left":
+                if (coor < wallCoor) {
                     return true;
                 }
-            }
-            break;
-        case "right":
-            let cellTen = board.children[9];
-            let rightWallCoor = cellTen.getBoundingClientRect()[direction];
-            console.log(rightWallCoor);
-            for (const coor of coorStorage[direction]["x"]) {
-                if (coor > rightWallCoor) {
+                break;
+            case "right":
+            case "bottom":
+                if (coor > wallCoor) {
                     return true;
                 }
-            }
-            break;
-        case "bottom":
-            let lastCell = board.children[board.children.length - 1];
-            let bottomWallCoor = lastCell.getBoundingClientRect()[direction];
-            // console.log(bottomWallCoor);
-            for (const coor of coorStorage[direction]["y"]) {
-                // console.log(coor);
-                if (coor > bottomWallCoor) {
-                    return true;
-                }
-            }
-            break;
+                break;
+        }
     }
 
     return false;
 }
 
+function getWallCoor(board, direction) {
+    // Outermost cell that's nearest to wall
+    let cell;
+
+    switch (direction) {
+        case "left":
+            cell = board.children[0];
+            break;
+        case "right":
+            cell = board.children[9];
+            break;
+        case "bottom":
+            cell = board.children[board.children.length - 1];
+            break;
+    }
+
+    return cell.getBoundingClientRect()[direction];
+}
+
+function getAxis(direction) {
+    if (direction == "left" || direction == "right") {
+        return "x";
+    }
+    else {
+        return "y";
+    }
+}
+
 function checkObstacle(coorStorage, board, direction) {
-    // Cycle through board
     let hasObstacle = false;
+
+    // Wall collision
     if (checkWall(coorStorage, board, direction) == true) {
         return hasObstacle = true;
     }
 
+    // Collision w/ already placed blocks
     for (const cell of board.children) {
-        // get cell's bounding rect
         let cellPos = cell.getBoundingClientRect();
+
+        // Cycle through nextBlockCoors'left/right/bottom
         let coorDict = coorStorage[direction];
-        // Cycle through nextBlockCoors left/right/bottom
+        // x, y both have same length; doesn't matter which used
         for (let i = 0; i < coorDict["x"].length; i++) {
-            // if coor matches the cellPos's left/right/bottom x AND Y
             let x = coorDict["x"][i];
             let y = coorDict["y"][i];
-            // console.log(direction + ": (" + x + "," + y + ")");
+            
             if (direction == "left" || direction == "right") {
                 if (x == cellPos[direction] && y == cellPos.bottom) {
-                    console.log("MATCHED BELOW");
-                    console.log(direction + ": (" + x + "," + y + ")");
-                    // if cell has "closed" class
                     if (cell.classList.contains("closed")) {
-                        console.log(cell);
                         hasObstacle = true;
                         return hasObstacle = true;
                     }
@@ -383,12 +394,8 @@ function checkObstacle(coorStorage, board, direction) {
             if (direction == "bottom") {
                 // Diff is y == cellPos[direction], not x
                 if (y == cellPos[direction] && x == cellPos.left) {
-                    // console.log("MATCHED BELOW");
-                    // console.log(direction + ": (" + x + "," + y + ")");
                     if (cell.classList.contains("closed")) {
-                        // console.log(cell);
                         hasObstacle = true;
-                        // console.log(`bottom: ${hasObstacle}`);
                         return hasObstacle = true;
                     }
                 }
@@ -418,7 +425,7 @@ function collision(direction, ghost=false) {
     }
     let board = document.querySelector(".board");
 
-    getNextBlockCoors(nextBlockCoors, block, board, direction);
+    storeTargetCoors(nextBlockCoors, block, board, direction);
     let hasObstacle = checkObstacle(nextBlockCoors, board, direction);
     resetCoors(nextBlockCoors);
 
@@ -614,7 +621,7 @@ function main() {
     // placeBlock(); 
     // clearFullLines();
 
-    // getNextBlockCoors(nextBlockCoors, block, board, direction);
+    // storeTargetCoors(nextBlockCoors, block, board, direction);
     // checkObstacle(nextBlockCoors, board, direction);
     // collision(direction);
     // ---
