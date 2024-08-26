@@ -70,14 +70,6 @@ function createEleWithCls(ele, clsArr) {
     return element;
 }
 
-function checkClsExist(variable, clsName) {
-    if (variable.classList.contains(clsName)) {
-        return true
-    }
-    
-    return false
-}
-
 // TETRIS BLOCK INFO
 const PX_WIDTH = 48;
 const PX_HEIGHT = 48;
@@ -182,7 +174,7 @@ function setGhostPos(blockXPos) {
 
 function processGhostPos(ghost) {
     while (true) {
-        if (collision("bottom", true) == false) {
+        if (checkCollision("bottom", true) == false) {
             ghost.style.top = `${ghost.offsetTop + PX_HEIGHT}px`;
         }
         else {
@@ -227,20 +219,20 @@ function gameLoop() {
     let ghost = document.querySelector(".ghost");
     
     if (keyState["ArrowDown"] == true) {
-        if (collision("bottom") == false) {
+        if (checkCollision("bottom") == false) {
             block.style.top = `${block.offsetTop + PX_HEIGHT}px`;
             // ghost.style.top = `${ghost.offsetTop + PX_HEIGHT}px`;
         }
     }    
     if (keyState["ArrowLeft"] == true) {
-        if (collision("left") == false) {
+        if (checkCollision("left") == false) {
             block.style.left = `${block.offsetLeft - PX_WIDTH}px`;
             setGhostPos(block.style.left);
             // ghost.style.left = `${ghost.offsetLeft - PX_WIDTH}px`;
         }
     }
     if (keyState["ArrowRight"] == true) {
-        if (collision("right") == false) {
+        if (checkCollision("right") == false) {
             block.style.left = `${block.offsetLeft + PX_WIDTH}px`;
             setGhostPos(block.style.left);
             // ghost.style.left = `${ghost.offsetLeft + PX_WIDTH}px`;
@@ -283,6 +275,17 @@ let nextBlockCoors = {
     },
 }
 
+// Retrieves coors of cells that block will move into, based on the direction.
+function storeTargetCoors(coorStorage, block, board, direction) {
+    for (const px of block.children) {
+        if (px.classList.contains("filled")) {
+            // Save coors of px client rect left/right/bottom (depending on direction) + 24 in storage to get nextStorageCoor
+            let pxPos = px.getBoundingClientRect();
+            processCoorStorage(coorStorage, pxPos, direction);
+        }
+    }
+}
+
 function processCoorStorage(coorStorage, pxPos, direction) {
     switch (direction) {
         case "left":
@@ -302,14 +305,18 @@ function processCoorStorage(coorStorage, pxPos, direction) {
     }
 }
 
-function storeTargetCoors(coorStorage, block, board, direction) {
-    for (const px of block.children) {
-        if (px.classList.contains("filled")) {
-            // Save coors of px client rect left/right/bottom (depending on direction) + 24 in storage to get nextStorageCoor
-            let pxPos = px.getBoundingClientRect();
-            processCoorStorage(coorStorage, pxPos, direction);
-        }
+
+
+function checkObstacle(coorStorage, board, direction) {
+    let wallObstacle = checkWall(coorStorage, board, direction);
+    let blockObstacle = checkBlockObstacle(coorStorage, board, direction);
+
+    // Check collision w/ wall & already placed blocks
+    if (wallObstacle == true || blockObstacle == true) {
+        return true;
     }
+
+    return false;
 }
 
 function checkWall(coorStorage, board, direction) {
@@ -363,15 +370,7 @@ function getAxis(direction) {
     }
 }
 
-function checkObstacle(coorStorage, board, direction) {
-    let hasObstacle = false;
-
-    // Wall collision
-    if (checkWall(coorStorage, board, direction) == true) {
-        return hasObstacle = true;
-    }
-
-    // Collision w/ already placed blocks
+function checkBlockObstacle(coorStorage, board, direction) {
     for (const cell of board.children) {
         let cellPos = cell.getBoundingClientRect();
 
@@ -385,8 +384,7 @@ function checkObstacle(coorStorage, board, direction) {
             if (direction == "left" || direction == "right") {
                 if (x == cellPos[direction] && y == cellPos.bottom) {
                     if (cell.classList.contains("closed")) {
-                        hasObstacle = true;
-                        return hasObstacle = true;
+                        return true;
                     }
                 }
             }
@@ -395,15 +393,15 @@ function checkObstacle(coorStorage, board, direction) {
                 // Diff is y == cellPos[direction], not x
                 if (y == cellPos[direction] && x == cellPos.left) {
                     if (cell.classList.contains("closed")) {
-                        hasObstacle = true;
-                        return hasObstacle = true;
+                        return true;
                     }
                 }
             }
+
         }
     }
 
-    return hasObstacle;
+    return false;
 }
 
 function resetCoors(coorStorage) {
@@ -415,28 +413,27 @@ function resetCoors(coorStorage) {
     }
 }
 
-function collision(direction, ghost=false) {
+// Checks collision for both block & ghost piece
+function checkCollision(direction, ghost=false) {
+    let board = document.querySelector(".board");
     let block;
+
     if (ghost == false) {
         block = document.querySelector(".block");
     }
     else {
         block = document.querySelector(".ghost");
     }
-    let board = document.querySelector(".board");
 
     storeTargetCoors(nextBlockCoors, block, board, direction);
     let hasObstacle = checkObstacle(nextBlockCoors, board, direction);
     resetCoors(nextBlockCoors);
 
     if (hasObstacle) {
-        console.log(hasObstacle);
-        console.log("OBSTACLE IN WAY");
-
         return true;
     }
     
-    return false
+    return false;
 }
 
 // SECTION: Place block
@@ -623,7 +620,7 @@ function main() {
 
     // storeTargetCoors(nextBlockCoors, block, board, direction);
     // checkObstacle(nextBlockCoors, board, direction);
-    // collision(direction);
+    // checkCollision(direction);
     // ---
 
     addCtrls();
