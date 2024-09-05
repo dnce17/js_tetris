@@ -26,7 +26,7 @@ body {
     /* border: 1px solid black; */
 }
 
-.filled {
+.px {
     position: relative;
     width: 48px;
     height: 48px;
@@ -40,8 +40,8 @@ body {
 /* Create board */
 .board {
     display: grid;
-    grid-template-columns: repeat(10, 1fr);
-    grid-template-rows: repeat(15, 1fr);
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(5, 1fr);
     width: fit-content;
 
     /* TEST USE */
@@ -57,11 +57,11 @@ body {
     height: 48px;
 }
 
-.cell:nth-child(10n) {
+.cell:nth-child(6n) {
     border-right: 1px solid black;
 }
 
-.cell:nth-last-child(-n+10) {
+.cell:nth-last-child(-n+6) {
     border-bottom: 1px solid black;
 }
 
