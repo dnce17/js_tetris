@@ -75,13 +75,18 @@ const PX_WIDTH = 48;
 const PX_HEIGHT = 48;
 const PX_COUNT = 9; // Block is 3x3
 // const BLOCK_BAG = ["Z", "S", "L", "O"];
-const BLOCK_BAG = ["S"];
+const BLOCK_BAG = ["T"];
 let keyState = {
     "ArrowDown": null,
     "ArrowLeft": null,
     "ArrowRight": null,
     " ": null
 };
+let blockState = {
+    "blockName": null,
+    "rotationIndex": 0,
+    "rotationTotal": null,
+}
 
 // BOARD INFO
 let TOTAL_COLUMN = 10;
@@ -130,45 +135,89 @@ function blockTypes() {
              1, 1, 1,
              0, 0, 0],
         ],
+        "J": [
+            [0, 1, 0,
+             0, 1, 0,
+             1, 1, 0],
+            [1, 0, 0,
+             1, 1, 1,
+             0, 0, 0],
+            [0, 1, 1,
+             0, 1, 0,
+             0, 1, 0],
+            [0, 0, 0,
+             1, 1, 1,
+             0, 0, 1],
+        ],
         "O": [
             [1, 1, 0,
              1, 1, 0,
              0, 0, 0],
+        ],
+        "T": [
+            [0, 1, 0,
+             1, 1, 1,
+             0, 0, 0],
+            [0, 1, 0,
+             0, 1, 1,
+             0, 1, 0],
+            [0, 0, 0,
+             1, 1, 1,
+             0, 1, 0],
+            [0, 1, 0,
+             1, 1, 0,
+             0, 1, 0],
+        ],
+
+        // ACTION: change all block struc to 4x4 --> CSS repeat 3 to 4 in col + row
+        "I": [
+            [0, 0, 0, 0,
+             1, 1, 1, 1,
+             0, 0, 0, 0],
+            [1, 0, 0,
+             1, 0, 0,
+             1, 0, 0,
+             1, 0, 0],
         ]
+
     }
 
     return blocks
 }
 
 function getRandomBlock(bag) {
-    let strucData = blockTypes();
+    let blockBag = blockTypes();
     let val = Math.floor(Math.random() * bag.length);
-
     let block = bag[val];
-    let defaultBlock = strucData[block][0]  // Default = non-rotated block
 
-    return defaultBlock
+    return {
+        "name": block,
+        "composition": blockBag[block],
+    }
 }
 
-function createPiece(ghostStatus=false) {
+function createPiece(ghostStatus=false, rotationIndex=0) {
     let tetrisGame = document.querySelector(".tetris-game");
     let pieceCtnr = createEleWithCls("div", ghostStatus ? ["ghost"] : ["block"]);
 
     tetrisGame.prepend(pieceCtnr);
     let block = getRandomBlock(BLOCK_BAG);
 
-    for (let i = 0; i < block.length; i++) {
-        let px = block[i] == 0 ? createEleWithCls("div", ["px"]) : createEleWithCls("div", ["px", "filled"]);
+    blockState.blockName = block.name;
+    let blockComp = block.composition[rotationIndex];
+
+    for (let i = 0; i < blockComp.length; i++) {
+        let px = blockComp[i] == 0 ? createEleWithCls("div", ["px"]) : createEleWithCls("div", ["px", "filled"]);
         pieceCtnr.appendChild(px);
     }
 }
 
-function setGhostPos(blockXPos) {
+function setGhostPos() {
     let ghost = document.querySelector(".ghost");
     let block = document.querySelector(".block");    
 
     ghost.style.top = block.style.top;
-    ghost.style.left = blockXPos;
+    ghost.style.left = block.style.left;
     processGhostPos(ghost);
 }
 
@@ -193,12 +242,61 @@ function activateDropCtrls() {
     setGhostPos();
 }
 
+function rotatePiece() {
+    // NOTE: Doesn't actually rotate block, but deletes block and creates the rotated version
+    let blockBag = blockTypes();
+    let block = document.querySelector(".block");
+    let ghost = document.querySelector(".ghost");
+
+    let blockLeft = block.style.left;
+    let blockTop = block.style.top;
+
+
+    // Set the total rotation for that block piece
+    blockState.rotationTotal = blockBag[blockState.blockName].length;
+
+    // Increase by 1 since this func changes rotation
+    // Make sure the rotationIndex resets if rotationTotal == blockState.rotationTotal
+
+    // Minus 1 b/c 0-indexed
+    if (blockState.rotationIndex != blockState.rotationTotal - 1) {
+        blockState.rotationIndex += 1;
+    }
+    else {
+        blockState.rotationIndex = 0;
+    }
+
+    // Delete block + ghost
+    block.remove()
+    ghost.remove()
+
+    // Refactor createPiece to account for rotationIndex
+    // createPiece() will create both the rotated block and ghost
+
+    createPiece(undefined, blockState.rotationIndex);
+    createPiece(true, blockState.rotationIndex);
+
+    // Ensure piece's position stays in place rather than go back to top
+
+    // Wall kick system is needed, BUT that starts heading into complex territory
+    // Thoughts: I might just disabled rotation if piece is near a set piece (left, right, and bottom)
+    let rotatedBlock = document.querySelector(".block");
+    rotatedBlock.style.left = blockLeft;
+    rotatedBlock.style.top = blockTop;
+
+    setGhostPos();
+}
+
 function addCtrls() {
     let keys = ["ArrowDown", "ArrowLeft", "ArrowRight", " ", "ArrowUp"];
 
     window.addEventListener("keydown", function(e) {
         if (e.key == " ") {
             activateDropCtrls();
+        }
+
+        if (e.key == "r") {
+            rotatePiece();
         }
 
         if (keys.includes(e.key)) {
@@ -216,33 +314,28 @@ function addCtrls() {
 // CODE CLEAN UP for this will be done after all features are done
 function gameLoop() {
     let block = document.querySelector(".block");
-    let ghost = document.querySelector(".ghost");
     
     if (keyState["ArrowDown"] == true) {
         if (checkCollision("bottom") == false) {
             block.style.top = `${block.offsetTop + PX_HEIGHT}px`;
-            // ghost.style.top = `${ghost.offsetTop + PX_HEIGHT}px`;
         }
     }    
     if (keyState["ArrowLeft"] == true) {
         if (checkCollision("left") == false) {
             block.style.left = `${block.offsetLeft - PX_WIDTH}px`;
-            setGhostPos(block.style.left);
-            // ghost.style.left = `${ghost.offsetLeft - PX_WIDTH}px`;
+            setGhostPos();
         }
     }
     if (keyState["ArrowRight"] == true) {
         if (checkCollision("right") == false) {
             block.style.left = `${block.offsetLeft + PX_WIDTH}px`;
-            setGhostPos(block.style.left);
-            // ghost.style.left = `${ghost.offsetLeft + PX_WIDTH}px`;
+            setGhostPos();
         }
     }
 
     // TEST USE ONLY
     if (keyState["ArrowUp"] == true) {
         block.style.top = `${block.offsetTop - PX_HEIGHT}px`;
-        // ghost.style.top = `${ghost.offsetTop - PX_HEIGHT}px`;
     }
 
     let direction = "left"
@@ -304,8 +397,6 @@ function processCoorStorage(coorStorage, pxPos, direction) {
             break;
     }
 }
-
-
 
 function checkObstacle(coorStorage, board, direction) {
     let wallObstacle = checkWall(coorStorage, board, direction);
@@ -610,6 +701,7 @@ function main() {
 
     // Other Test
     let block = document.querySelector(".block");
+    let ghost = document.querySelector(".ghost");
     let board = document.querySelector(".board");
     let direction = "left";
     labelCoor(board, direction);
@@ -625,6 +717,10 @@ function main() {
 
     addCtrls();
     gameLoop();
+
+
+
+    rotatePiece();
 
     let cellNum = 3;
     let cell = document.querySelector(`.cell-${cellNum}`);
