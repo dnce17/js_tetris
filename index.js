@@ -9,7 +9,7 @@ let block = [
 // Grid Info
 // NOTE: CSS column is 6, row is 5 --> This could impact collision funcs you make, so keep that in mind
 let grid = [
-    [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 1],
     [0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0],
@@ -126,10 +126,10 @@ function checkCollision(blockPos, direction, TOTAL_COLUMN, TOTAL_ROW) {
         return true;
     }
 
-    // let blockCollision = checkBlockCollision(blockPos, direction);
-    // if (blockCollision == true) {
-    //     return true;
-    // }
+    let blockCollision = checkBlockCollision(blockPos, direction);
+    if (blockCollision == true) {
+        return true;
+    }
 
     return false;
 }
@@ -160,12 +160,25 @@ function checkWallCollision(blockPos, direction, TOTAL_COLUMN, TOTAL_ROW) {
 // CHECKPOINT
 function checkBlockCollision(blockPos, direction) { 
     let outermostCoors;
-    // if (direction == "down") {
-    //     outermostCoor = getOutermostCoosr("y", direction);
-    // }
-    // else {
-    //     outermostCoor = getOutermostCoors("x", direction);
-    // }
+    if (direction == "down") {
+        outermostCoors = getOutermostCoosr(blockPos, "y", direction);
+    }
+    else {
+        outermostCoors = getOutermostCoors(blockPos, "x", direction);
+    }
+
+
+    // outermostCoors = getOutermostCoors(blockPos, "x", "right");
+    console.log(outermostCoors);
+    for (let coor of outermostCoors) {
+        if (direction == "right" && grid[coor.y][coor.x + 1] == 1) {
+            console.log("right collision");
+            return true;
+        }
+        else {
+            console.log("no collision");
+        }
+    }
 
     // // Check coor.x/y +/- 1; don't allow movement if grid[row][column] overlaps (has 1)
     // for (let coor of blockPos) {
@@ -183,9 +196,7 @@ function checkBlockCollision(blockPos, direction) {
     //         return true;
     //     }
     // }
-
-    outermostCoors = getOutermostCoors("x", "right");
-    console.log(outermostCoors);
+    // console.log(outermostCoors);
 
     // for (let i of outermostCoors) {
     //     if (direction == "right" && ...) {
@@ -198,13 +209,42 @@ function checkBlockCollision(blockPos, direction) {
     return false
 }
 
+// const numbers = [4, 9, 16, 25];
+// const newArr = numbers.map(Math.sqrt)
+
+
 // CHECKPOINT
-// function getOutermostCoors(axis, direction) {
+function getOutermostCoors(blockPos, axis, direction) {
     // Get the outermost x or y coors for block collision check, depending on directions
     // ****NOTE: there's going to be more than outermost coors
         // E.g. a block that has at least px in each row will have 3 outermost x
 
     // Cycle through each arr of block
+
+    let axisVals = [];
+    // Grouped by either x or y
+    let groupedByY = [];
+    let maxXPerY = []
+    if (axis == "x" && direction == "right") {
+        // Group blockPos by y
+        groupedByY = blockPos.reduce((acc, obj) => {
+            if (!acc[obj.y]) {
+              acc[obj.y] = [];
+            }
+            
+            acc[obj.y].push(obj);
+            return acc;
+          }, {});
+
+        // Get the highest x of each unique y value
+        maxXPerY = Object.keys(groupedByY).map(y => {
+            return groupedByY[y].reduce((maxObj, obj) => obj.x > maxObj.x ? obj : maxObj);
+        });
+    }
+
+    // console.log(maxXPerY);
+
+    return maxXPerY;
 
     
 
@@ -216,7 +256,7 @@ function checkBlockCollision(blockPos, direction) {
 
     // // Left = lowest val is outermost, Right/Down = highest val
     // return (direction == "left") ? Math.min(...axisVals) : Math.max(...axisVals);
-// }
+}
 
 // SECTION: line clear
 function clear_line() {
