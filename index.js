@@ -1,19 +1,19 @@
 // Block Info
-let defaultBlockPos = {"x": 1, "y": 0}
+let defaultBlockPos = {"x": 2, "y": 1}
 let blockPos = [];
 let block = [
-    [0, 1, 1],
-    [1, 1, 0],
+    [0, 1, 0],
+    [1, 1, 1],
 ]
 
 // Grid Info
 // NOTE: CSS column is 6, row is 5 --> This could impact collision funcs you make, so keep that in mind
 let grid = [
-    [0, 0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 1, 1],
     [0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0],
+    [0, 1, 0, 0, 1, 0],
 ]
 let TOTAL_COLUMN = 6;
 let TOTAL_ROW = 5;
@@ -161,57 +161,38 @@ function checkWallCollision(blockPos, direction, TOTAL_COLUMN, TOTAL_ROW) {
 function checkBlockCollision(blockPos, direction) { 
     let outermostCoors;
     if (direction == "down") {
-        outermostCoors = getOutermostCoosr(blockPos, "y", direction);
+        outermostCoors = getOutermostCoors(blockPos, "y", direction);
     }
     else {
         outermostCoors = getOutermostCoors(blockPos, "x", direction);
     }
 
-
     // outermostCoors = getOutermostCoors(blockPos, "x", "right");
-    console.log(outermostCoors);
+    // outermostCoors = getOutermostCoors(blockPos, "x", "left");
     for (let coor of outermostCoors) {
         if (direction == "right" && grid[coor.y][coor.x + 1] == 1) {
             console.log("right collision");
             return true;
         }
-        else {
-            console.log("no collision");
+        // else {
+        //     console.log("no collision");
+        // }
+
+        if (direction == "left" && grid[coor.y][coor.x - 1] == 1) {
+            console.log("left collision");
+            return true;
         }
+
+        if (direction == "down" && grid[coor.y + 1][coor.x] == 1) {
+            console.log("down collision");
+            return true;
+        }
+
+        
     }
 
-    // // Check coor.x/y +/- 1; don't allow movement if grid[row][column] overlaps (has 1)
-    // for (let coor of blockPos) {
-    //     // You only want to check the last row of block for going down
-    //     if (direction == "down" && grid[outermostCoor + 1][coor.x] == 1) {
-    //         return true;
-    //     }
-
-    //     if (direction == "left" && grid[coor.y][outermostCoor - 1] == 1) {
-    //         return true;
-    //     }
-
-    //     if (direction == "right" && grid[coor.y][outermostCoor + 1] == 1) {
-    //         console.log("right collision")
-    //         return true;
-    //     }
-    // }
-    // console.log(outermostCoors);
-
-    // for (let i of outermostCoors) {
-    //     if (direction == "right" && ...) {
-    //         return true;
-    //     }
-    // }
-
-
-
-    return false
+    return false;
 }
-
-// const numbers = [4, 9, 16, 25];
-// const newArr = numbers.map(Math.sqrt)
-
 
 // CHECKPOINT
 function getOutermostCoors(blockPos, axis, direction) {
@@ -219,44 +200,69 @@ function getOutermostCoors(blockPos, axis, direction) {
     // ****NOTE: there's going to be more than outermost coors
         // E.g. a block that has at least px in each row will have 3 outermost x
 
-    // Cycle through each arr of block
-
-    let axisVals = [];
     // Grouped by either x or y
-    let groupedByY = [];
-    let maxXPerY = []
-    if (axis == "x" && direction == "right") {
-        // Group blockPos by y
-        groupedByY = blockPos.reduce((acc, obj) => {
-            if (!acc[obj.y]) {
-              acc[obj.y] = [];
-            }
-            
-            acc[obj.y].push(obj);
-            return acc;
-          }, {});
+    let groupedAxis;
+    let outermostCoors = [];
+    if (axis == "x" && (direction == "right" || direction == "left")) {
+        // Group all coors by y
+        groupedAxis = groupByAxis("y", blockPos);
 
-        // Get the highest x of each unique y value
-        maxXPerY = Object.keys(groupedByY).map(y => {
-            return groupedByY[y].reduce((maxObj, obj) => obj.x > maxObj.x ? obj : maxObj);
+        // Right - Get highest x of each unique y 
+
+        // Get highest x of each unique y if right, lowest x if left, highest y if down
+        outermostCoors = processOutermostCoors("y", groupedAxis, direction);
+        console.log(outermostCoors);
+        // outermostCoors = Object.keys(groupedAxis).map(y => {
+        //     return groupedAxis[y].reduce((coorAcc, coorObj) => coorObj.x > coorAcc.x ? coorObj : coorAcc);
+        // });
+    }
+
+    if (axis == "y" && direction == "down") {
+        // Group all coors by y
+        groupedAxis = groupByAxis("x", blockPos);
+
+        outermostCoors = processOutermostCoors("x", groupedAxis, direction);
+        console.log(outermostCoors);
+    }
+
+    // console.log(groupedAxis);
+    // console.log(outermostCoors);
+
+    return outermostCoors;
+}
+
+function groupByAxis(axis, blockPos) {
+    return blockPos.reduce((acc, coorObj) => {
+        let coorVal = coorObj[axis];
+        if (!acc[coorVal]) {
+          acc[coorVal] = [];
+        }
+        
+        acc[coorVal].push(coorObj);
+        return acc;
+      }, {});
+}
+
+function processOutermostCoors(axis, groupedAxisDict, direction) {
+    if (axis == "y" && direction == "right") {
+        return Object.keys(groupedAxisDict).map(y => {
+            return groupedAxisDict[y].reduce((coorAcc, coorObj) => coorObj.x > coorAcc.x ? coorObj : coorAcc);
         });
     }
 
-    // console.log(maxXPerY);
+    if (axis == "y" && direction == "left") {
+        return Object.keys(groupedAxisDict).map(y => {
+            return groupedAxisDict[y].reduce((coorAcc, coorObj) => coorObj.x < coorAcc.x ? coorObj : coorAcc);
+        });
+    }
 
-    return maxXPerY;
-
-    
-
-    // DOESN'T WORK
-    // let axisVals = []
-    // for (let coor of blockPos) {
-    //     axis == "y" ? axisVals.push(coor.y) : axisVals.push(coor.x);
-    // }
-
-    // // Left = lowest val is outermost, Right/Down = highest val
-    // return (direction == "left") ? Math.min(...axisVals) : Math.max(...axisVals);
+    if (axis == "x" && direction == "down") {
+        return Object.keys(groupedAxisDict).map(x => {
+            return groupedAxisDict[x].reduce((coorAcc, coorObj) => coorObj.y > coorAcc.y ? coorObj : coorAcc);
+        });
+    }
 }
+
 
 // SECTION: line clear
 function clear_line() {
