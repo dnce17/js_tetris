@@ -1,5 +1,5 @@
 // Block Info
-let defaultBlockPos = {"x": 2, "y": 1}
+let defaultBlockPos = {"x": 2, "y": 0}
 let blockPos = [];
 let block = [
     [0, 1, 0],
@@ -9,11 +9,11 @@ let block = [
 // Grid Info
 // NOTE: CSS column is 6, row is 5 --> This could impact collision funcs you make, so keep that in mind
 let grid = [
-    [0, 0, 0, 0, 1, 1],
+    [0, 0, 0, 0, 0, 1],
     [0, 0, 0, 0, 0, 0],
     [1, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0],
-    [0, 1, 0, 0, 1, 0],
+    [0, 0, 0, 0, 0, 0],
 ]
 let TOTAL_COLUMN = 6;
 let TOTAL_ROW = 5;
@@ -157,7 +157,6 @@ function checkWallCollision(blockPos, direction, TOTAL_COLUMN, TOTAL_ROW) {
     return false;
 }
 
-// CHECKPOINT
 function checkBlockCollision(blockPos, direction) { 
     let outermostCoors;
     if (direction == "down") {
@@ -167,16 +166,11 @@ function checkBlockCollision(blockPos, direction) {
         outermostCoors = getOutermostCoors(blockPos, "x", direction);
     }
 
-    // outermostCoors = getOutermostCoors(blockPos, "x", "right");
-    // outermostCoors = getOutermostCoors(blockPos, "x", "left");
     for (let coor of outermostCoors) {
         if (direction == "right" && grid[coor.y][coor.x + 1] == 1) {
             console.log("right collision");
             return true;
         }
-        // else {
-        //     console.log("no collision");
-        // }
 
         if (direction == "left" && grid[coor.y][coor.x - 1] == 1) {
             console.log("left collision");
@@ -187,46 +181,31 @@ function checkBlockCollision(blockPos, direction) {
             console.log("down collision");
             return true;
         }
-
-        
     }
 
     return false;
 }
 
-// CHECKPOINT
 function getOutermostCoors(blockPos, axis, direction) {
-    // Get the outermost x or y coors for block collision check, depending on directions
-    // ****NOTE: there's going to be more than outermost coors
+    // Gets the outermost x or y coors for block collision check, depending on directions
+    // ****NOTE: there may be more than 1 outermost coors
         // E.g. a block that has at least px in each row will have 3 outermost x
+        // Get highest x of each unique y if right, lowest x if left, highest y if down
 
     // Grouped by either x or y
     let groupedAxis;
     let outermostCoors = [];
     if (axis == "x" && (direction == "right" || direction == "left")) {
-        // Group all coors by y
+        // Group all y coors
         groupedAxis = groupByAxis("y", blockPos);
-
-        // Right - Get highest x of each unique y 
-
-        // Get highest x of each unique y if right, lowest x if left, highest y if down
         outermostCoors = processOutermostCoors("y", groupedAxis, direction);
-        console.log(outermostCoors);
-        // outermostCoors = Object.keys(groupedAxis).map(y => {
-        //     return groupedAxis[y].reduce((coorAcc, coorObj) => coorObj.x > coorAcc.x ? coorObj : coorAcc);
-        // });
     }
 
     if (axis == "y" && direction == "down") {
-        // Group all coors by y
+        // Group all x coors
         groupedAxis = groupByAxis("x", blockPos);
-
         outermostCoors = processOutermostCoors("x", groupedAxis, direction);
-        console.log(outermostCoors);
     }
-
-    // console.log(groupedAxis);
-    // console.log(outermostCoors);
 
     return outermostCoors;
 }
