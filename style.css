@@ -17,6 +17,10 @@ body {
     transform: translate(-50%, -50%)
 }
 
+.ghost {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
 .px {
     position: relative;
     width: 48px;
@@ -41,7 +45,7 @@ body {
 
 .row {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(10, 1fr);
 }
 
 .cell {
@@ -51,18 +55,13 @@ body {
     height: 48px;
 }
 
-.cell:nth-child(6n) {
+.cell:nth-child(10n) {
     border-right: 1px solid black;
 }
 
 .row:last-child .cell {
     border-bottom: 1px solid black;
 }
-
-.ghost {
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
 
 /* TEST USE */
 .test-direction {

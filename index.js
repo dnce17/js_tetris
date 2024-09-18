@@ -1,5 +1,5 @@
 // Block Info
-let defaultBlockPos = {"x": 0, "y": 0}
+let defaultBlockPos = {"x": 2, "y": 0}
 let blockPos = [];
 let block = [
     [0, 1, 0],
@@ -9,16 +9,20 @@ let block = [
 let ghostPos;
 
 // Grid Info
-// NOTE: CSS column is 6, row is 5 --> This could impact collision funcs you make, so keep that in mind
-let grid = [
-    [0, 0, 0, 0, 1, 1],
-    [0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0],
-    [1, 0, 0, 1, 0, 0],
-]
-let TOTAL_COLUMN = 6;
-let TOTAL_ROW = 5;
+// NOTE: Make to change the CSS grid-templete if you change the row and col count
+// let grid = [
+//     [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+//     [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//     [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+// ]
+let grid = [];
+let TOTAL_COLUMN = 10;
+let TOTAL_ROW = 8;
 
 // Ctrls Info
 let keyState = {
@@ -27,6 +31,26 @@ let keyState = {
     "ArrowRight": null,
     " ": null
 };
+
+// SECTION: Grid (dynamically made)
+function createGrid(grid) {
+    for (let row = 0; row < TOTAL_ROW; row++) {
+        let rowArr = [];
+        for (let col = 0; col < TOTAL_COLUMN; col++) {
+            rowArr.push(0);
+
+            // TEST USE --> insert random obstacles
+            // let coin = Math.random() < 0.80 ? 'Heads' : 'Tails';
+            // if (coin == "Heads") {
+            //     rowArr.push(0);
+            // }
+            // else {
+            //     rowArr.push(1);
+            // }
+        }
+        grid.push(rowArr);
+    }
+}
 
 // SECTION: Board
 function updateBoard(grid) {
@@ -60,8 +84,8 @@ function createBoard(board, grid) {
             }
 
             rowDiv.appendChild(cell);
-            // board.appendChild(cell);
         }
+
         board.appendChild(rowDiv);
     }
 
@@ -71,7 +95,7 @@ function createBoard(board, grid) {
 
 // TEST USE
 function addGridLabels() {
-    let board = document.querySelector(".board")
+    let board = document.querySelector(".board");
     for (let row = 0; row < board.children.length; row++) {
         let currentRow = board.children[row];
         for (let col = 0; col < currentRow.children.length; col++) {
@@ -103,7 +127,7 @@ function saveBlockCoor(blockPos, x, y) {
 
 function updateBlockPos(blockPos, direction) {
     removeOldBlock(blockPos);
-    addUpdatedBlock(blockPos, direction);
+    addUpdatedPiece(blockPos, direction);
     updateBoard(grid);
 }
 
@@ -115,31 +139,8 @@ function removeOldBlock(blockPos) {
     }
 }
 
-function addUpdatedBlock(blockPos, direction) {
-    for (let coor of blockPos) {
-        if (direction == "down") {
-            coor.y += 1;
-        }
-
-        if (direction == "left") {
-            coor.x -= 1;
-        }
-
-        if (direction == "right") {
-            coor.x += 1;
-        }
-
-        // TEST USE ONLY
-        if (direction == "up") {
-            coor.y -= 1;
-        }
-
-        grid[coor.y][coor.x] = 1;
-    }
-}
-
-// TESTING refactor
-function addUpdatedBlockTest(pos, direction, ghost=false) {
+// REUSABLE; has been reused too; MAYBE PLACE IN A "REUSUABLE SECTION"
+function addUpdatedPiece(pos, direction, ghost=false) {
     for (let coor of pos) {
         if (direction == "down") {
             coor.y += 1;
@@ -164,54 +165,42 @@ function addUpdatedBlockTest(pos, direction, ghost=false) {
     }
 }
 
+// REUSABLE
 function deepCopy(item) {
     return JSON.parse(JSON.stringify(item));
 }
 
 // SECTION: Ghost
-
-// MOST RECENT CHECKPOINT
-// HOWEVER, before working on this, change the board to match grid as per instructed in 
-// github projects
+// NOTE: Any changes to ghost position is solely reflected on DOM and not grid b/c it's just visual aid
 function placeGhost(blockPos) {
-    // NOTE: the ghost is just a visual aid. The grid should not show 1s for a ghost or else
-        // the block can collide with it
-
     ghostPos = deepCopy(blockPos);
     let direction = "down";
 
-    // Loop until ghost hits a wall or block
+    calculateGhostPos(ghostPos, direction, TOTAL_COLUMN, TOTAL_ROW);
+    displayGhost(ghostPos);
+}
+
+function calculateGhostPos(ghostPos, direction, TOTAL_COLUMN, TOTAL_ROW) {
+    // Loop until ghost hits wall or block
     while(true) {
         if (checkCollision(ghostPos, direction, TOTAL_COLUMN, TOTAL_ROW) == false) {
-            console.log("no obstacle");
-    
-            // This add +1 to all the y coor
-            // Safe to move into if no obstacle
-            // Then we check (new y coor + 1) to see if obstacle
-            addUpdatedBlockTest(ghostPos, direction, true);
-    
-            // Updated coor after no obstacle
-            console.log("updated coor to prepare for next check");
-            for (let coor of ghostPos) {
-                console.log(coor);
-            }
+            // Adds 1 to all y coors b/c safe (aka no obstacle), then checks (new y coor + 1) to see if obstacle
+            addUpdatedPiece(ghostPos, direction, true);
         }
         else {
-            console.log("Positions before collision, no update to coor, SAME AS PREVIOUS");
-            for (let coor of ghostPos) {
-                console.log(coor);
-            }
             break;
         }
     }
+}
 
+function displayGhost(ghostPos) {
     // Match the ghostPos with DOM cells
-    // let boardDOM = document.querySelector(".board");
-    // for (let coor of ghostPos) {
-    //     let cell = boardDOM.children[coor.y].children[coor.x];
-    //     // console.log(cell);
-    //     cell.classList.add("ghost");
-    // }
+    let board = document.querySelector(".board");
+    for (let coor of ghostPos) {
+        // row = children[coor.y], col = children[coor.x]
+        let cell = board.children[coor.y].children[coor.x];
+        cell.classList.add("ghost");
+    }
 }
 
 // SECTION: Collision
@@ -391,7 +380,7 @@ function gameLoop() {
     // NOTE: if you want diagonal movement, put this in each if statement
     if (checkCollision(blockPos, direction, TOTAL_COLUMN, TOTAL_ROW) == false) {
         updateBlockPos(blockPos, direction);
-        // placeGhost(blockPos);
+        placeGhost(blockPos);
     }
 
     setTimeout(gameLoop, 30);
@@ -410,6 +399,7 @@ function createEleWithCls(ele, clsArr) {
 }
 
 function executeGame() {
+    createGrid(grid);
     updateBoard(grid);
     placeBlockDefaultPos();
     placeGhost(blockPos);
@@ -417,7 +407,7 @@ function executeGame() {
     // getOutermostCoors("y", "down")
 
     enableCtrls();
-    // gameLoop();
+    gameLoop();
 }
 
 executeGame();
