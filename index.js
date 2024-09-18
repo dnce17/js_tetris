@@ -1,19 +1,21 @@
 // Block Info
-let defaultBlockPos = {"x": 2, "y": 0}
+let defaultBlockPos = {"x": 0, "y": 0}
 let blockPos = [];
 let block = [
     [0, 1, 0],
     [1, 1, 1],
 ]
 
+let ghostPos;
+
 // Grid Info
 // NOTE: CSS column is 6, row is 5 --> This could impact collision funcs you make, so keep that in mind
 let grid = [
-    [0, 0, 0, 0, 0, 1],
-    [0, 0, 0, 0, 0, 0],
-    [1, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 1, 1],
     [0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 1, 0, 0],
 ]
 let TOTAL_COLUMN = 6;
 let TOTAL_ROW = 5;
@@ -48,6 +50,7 @@ function createBoard(board, grid) {
     // Create board cell + px 
     let cell;
     for (let row of grid) {
+        let rowDiv = createEleWithCls("div", ["row"]);
         for (let col of row) {
             if (col == 0) {
                 cell = createEleWithCls("div", ["cell"]);
@@ -55,8 +58,25 @@ function createBoard(board, grid) {
             else {
                 cell = createEleWithCls("div", ["cell", "px"]);
             }
-        
-            board.appendChild(cell);
+
+            rowDiv.appendChild(cell);
+            // board.appendChild(cell);
+        }
+        board.appendChild(rowDiv);
+    }
+
+    // TEST USE
+    addGridLabels();
+}
+
+// TEST USE
+function addGridLabels() {
+    let board = document.querySelector(".board")
+    for (let row = 0; row < board.children.length; row++) {
+        let currentRow = board.children[row];
+        for (let col = 0; col < currentRow.children.length; col++) {
+            let currentCol = currentRow.children[col];
+            currentCol.innerHTML = `${col}, ${row}`;
         }
     }
 }
@@ -116,6 +136,82 @@ function addUpdatedBlock(blockPos, direction) {
 
         grid[coor.y][coor.x] = 1;
     }
+}
+
+// TESTING refactor
+function addUpdatedBlockTest(pos, direction, ghost=false) {
+    for (let coor of pos) {
+        if (direction == "down") {
+            coor.y += 1;
+        }
+
+        if (direction == "left") {
+            coor.x -= 1;
+        }
+
+        if (direction == "right") {
+            coor.x += 1;
+        }
+
+        // TEST USE ONLY
+        if (direction == "up") {
+            coor.y -= 1;
+        }
+        
+        if (ghost == false) {
+            grid[coor.y][coor.x] = 1;
+        }
+    }
+}
+
+function deepCopy(item) {
+    return JSON.parse(JSON.stringify(item));
+}
+
+// SECTION: Ghost
+
+// MOST RECENT CHECKPOINT
+// HOWEVER, before working on this, change the board to match grid as per instructed in 
+// github projects
+function placeGhost(blockPos) {
+    // NOTE: the ghost is just a visual aid. The grid should not show 1s for a ghost or else
+        // the block can collide with it
+
+    ghostPos = deepCopy(blockPos);
+    let direction = "down";
+
+    // Loop until ghost hits a wall or block
+    while(true) {
+        if (checkCollision(ghostPos, direction, TOTAL_COLUMN, TOTAL_ROW) == false) {
+            console.log("no obstacle");
+    
+            // This add +1 to all the y coor
+            // Safe to move into if no obstacle
+            // Then we check (new y coor + 1) to see if obstacle
+            addUpdatedBlockTest(ghostPos, direction, true);
+    
+            // Updated coor after no obstacle
+            console.log("updated coor to prepare for next check");
+            for (let coor of ghostPos) {
+                console.log(coor);
+            }
+        }
+        else {
+            console.log("Positions before collision, no update to coor, SAME AS PREVIOUS");
+            for (let coor of ghostPos) {
+                console.log(coor);
+            }
+            break;
+        }
+    }
+
+    // Match the ghostPos with DOM cells
+    // let boardDOM = document.querySelector(".board");
+    // for (let coor of ghostPos) {
+    //     let cell = boardDOM.children[coor.y].children[coor.x];
+    //     // console.log(cell);
+    //     cell.classList.add("ghost");
+    // }
 }
 
 // SECTION: Collision
@@ -295,6 +391,7 @@ function gameLoop() {
     // NOTE: if you want diagonal movement, put this in each if statement
     if (checkCollision(blockPos, direction, TOTAL_COLUMN, TOTAL_ROW) == false) {
         updateBlockPos(blockPos, direction);
+        // placeGhost(blockPos);
     }
 
     setTimeout(gameLoop, 30);
@@ -315,11 +412,12 @@ function createEleWithCls(ele, clsArr) {
 function executeGame() {
     updateBoard(grid);
     placeBlockDefaultPos();
+    placeGhost(blockPos);
     // checkBlockCollision(blockPos, "right");
     // getOutermostCoors("y", "down")
 
     enableCtrls();
-    gameLoop();
+    // gameLoop();
 }
 
 executeGame();
