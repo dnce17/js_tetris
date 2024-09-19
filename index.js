@@ -10,17 +10,17 @@ let ghostPos;
 
 // Grid Info
 // NOTE: Make to change the CSS grid-templete if you change the row and col count
-// let grid = [
-//     [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
-//     [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-//     [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-// ]
-let grid = [];
+let grid = [
+    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+]
+// let grid = [];
 let TOTAL_COLUMN = 10;
 let TOTAL_ROW = 8;
 
@@ -107,6 +107,9 @@ function addGridLabels() {
 
 // SECTION: Place block
 function placeBlockDefaultPos() {
+    // Reset blockPos
+    blockPos = [];
+
     for (let row = 0; row < block.length; row++) {
         let blockY = defaultBlockPos["y"] + row;
         for (let col = 0; col < block[row].length; col++) {
@@ -115,10 +118,25 @@ function placeBlockDefaultPos() {
             if (block[row][col] !== 0) { 
                 grid[blockY][blockX] = block[row][col];
                 saveBlockCoor(blockPos, blockX, blockY);
-                updateBoard(grid);
             }
         }
     }
+
+    updateBoard(grid);
+    placeGhost(blockPos);
+}
+
+function placeBlock(ghostPos, blockPos) {
+    // Remove block being controlled
+    removeOldBlock(blockPos);
+
+    // Place block based on ghostPos
+    for (let coor of ghostPos) {
+        grid[coor.y][coor.x] = 1;
+    }
+
+    // New block appears
+    placeBlockDefaultPos();
 }
 
 function saveBlockCoor(blockPos, x, y) {
@@ -171,7 +189,9 @@ function deepCopy(item) {
 }
 
 // SECTION: Ghost
-// NOTE: Any changes to ghost position is solely reflected on DOM and not grid b/c it's just visual aid
+// NOTE 1: Any changes to ghost position is solely changed in DOM and not grid b/c it's just visual aid
+// NOTE 2: placeGhost is based on blockPos and uses board DOM, 
+// so it should always be placed after funcs that alter blockPos and board DOM
 function placeGhost(blockPos) {
     ghostPos = deepCopy(blockPos);
     let direction = "down";
@@ -327,7 +347,6 @@ function processOutermostCoors(axis, groupedAxisDict, direction) {
     }
 }
 
-
 // SECTION: line clear
 function clear_line() {
     let test_grid = [
@@ -348,6 +367,10 @@ function enableCtrls() {
     let keys = ["ArrowDown", "ArrowLeft", "ArrowRight", " ", "ArrowUp"];
 
     window.addEventListener("keydown", function(e) {
+        if (e.key == " ") {
+            placeBlock(ghostPos, blockPos);
+        }
+
         if (keys.includes(e.key)) {
             keyState[e.key] = true;
         }
@@ -361,7 +384,7 @@ function enableCtrls() {
 }
 
 function gameLoop() {
-    let direction;
+    let direction = null;
     if (keyState["ArrowDown"] == true) {
         direction = "down";
     }    
@@ -378,7 +401,7 @@ function gameLoop() {
     }
 
     // NOTE: if you want diagonal movement, put this in each if statement
-    if (checkCollision(blockPos, direction, TOTAL_COLUMN, TOTAL_ROW) == false) {
+    if (direction != null && checkCollision(blockPos, direction, TOTAL_COLUMN, TOTAL_ROW) == false) {
         updateBlockPos(blockPos, direction);
         placeGhost(blockPos);
     }
@@ -399,10 +422,12 @@ function createEleWithCls(ele, clsArr) {
 }
 
 function executeGame() {
-    createGrid(grid);
+    // createGrid(grid);
     updateBoard(grid);
     placeBlockDefaultPos();
-    placeGhost(blockPos);
+    // placeBlock(ghostPos, blockPos);
+
+    // TEST (bottom 3)
     // checkBlockCollision(blockPos, "right");
     // getOutermostCoors("y", "down")
 
