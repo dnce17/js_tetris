@@ -6,7 +6,7 @@ let blockPos = [];
 //     [1, 1, 1],
 // ]
 
-let currentBlockType = blockTypes()["I"];
+let currentBlockType = blockTypes()["L"];
 let rotationIndex = 0;
 let block = currentBlockType[rotationIndex];
 
@@ -207,6 +207,7 @@ function blockTypes() {
 // Grid Info
 // NOTE: Make to change the CSS grid-templete if you change the row and col count
 let grid = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -218,7 +219,10 @@ let grid = [
 ]
 // let grid = [];
 let TOTAL_COLUMN = 10;
-let TOTAL_ROW = 8;
+
+// NOTE: 1st two rows will be filler rows in case blocks are rotated at the top of the board
+let TOTAL_ROW = 9;
+let FILLER_ROW = 1;
 
 // Ctrls Info
 let keyState = {
@@ -269,9 +273,18 @@ function removeOldBoard(board) {
 function createBoard(board, grid) {
     // Create board cell + px 
     let cell;
-    for (let row of grid) {
-        let rowDiv = createEleWithCls("div", ["row"]);
-        for (let col of row) {
+    for (let row = 0; row < TOTAL_ROW; row++) {
+        let rowDiv;
+
+        // Create filler row
+        if (row < FILLER_ROW) {
+            rowDiv = createEleWithCls("div", ["row", "hidden"]);
+        } 
+        else {
+            rowDiv = createEleWithCls("div", ["row"]);
+        }
+
+        for (let col of grid[row]) {
             if (col == 0) {
                 cell = createEleWithCls("div", ["cell"]);
             }
