@@ -1,17 +1,213 @@
 // Block Info
-let defaultBlockPos = {"x": 2, "y": 0}
+let defaultBlockPos = {"x": 3, "y": 0}
 let blockPos = [];
-let block = [
-    [0, 1, 0],
-    [1, 1, 1],
-]
+// let block = [
+//     [0, 1, 0],
+//     [1, 1, 1],
+// ]
+
+let currentBlockType = blockTypes()["I"];
+let rotationIndex = 0;
+let block = currentBlockType[rotationIndex];
 
 let ghostPos;
+
+// SECTION (IN PROGRESS): Block rotation
+function rotatePiece() {
+    if (rotationIndex != currentBlockType.length - 1) {
+        rotationIndex += 1;
+    }
+    else {
+        rotationIndex = 0;
+    }
+
+    console.log(rotationIndex);
+    block = currentBlockType[rotationIndex];
+    removeOldBlock(blockPos);
+
+    // TEST USE, but later, make a sep func that change position based where it currently is
+    placeBlockDefaultPos();
+}
+
+// Block Types
+function blockTypes() {
+    let blocks = {
+        "T": [
+            [
+                [0, 1, 0, 0],
+                [1, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ],
+            [
+                [0, 1, 0, 0],
+                [0, 1, 1, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, 0],
+            ],
+            [
+                [0, 0, 0, 0],
+                [1, 1, 1, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, 0],
+            ],
+            [
+                [0, 1, 0, 0],
+                [1, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, 0],
+            ],
+        ],
+        "Z": [
+            [
+                [1, 1, 0, 0],
+                [0, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ],
+            [
+                [0, 0, 1, 0],
+                [0, 1, 1, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, 0],
+            ],
+            [
+                [0, 0, 0, 0],
+                [1, 1, 0, 0],
+                [0, 1, 1, 0],
+                [0, 0, 0, 0],
+            ],
+            [
+                [0, 1, 0, 0],
+                [1, 1, 0, 0],
+                [1, 0, 0, 0],
+                [0, 0, 0, 0],
+            ],
+        ],
+        "S": [
+            [
+                [0, 1, 1, 0],
+                [1, 1, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ],
+            [
+                [0, 1, 0, 0],
+                [0, 1, 1, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 0],
+            ],
+            [
+                [0, 0, 0, 0],
+                [0, 1, 1, 0],
+                [1, 1, 0, 0],
+                [0, 0, 0, 0],
+            ],
+            [
+                [1, 0, 0, 0],
+                [1, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, 0],
+            ],
+        ],
+        "L": [
+            [
+                [1, 0, 0, 0],
+                [1, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ],
+            [
+                [0, 1, 1, 0],
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, 0],
+            ],
+            [
+                [0, 0, 0, 0],
+                [1, 1, 1, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 0],
+            ],
+            [
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
+                [1, 1, 0, 0],
+                [0, 0, 0, 0],
+            ],
+        ],
+        "J": [
+            [
+                [0, 0, 1, 0],
+                [1, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ],
+            [
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 1, 1, 0],
+                [0, 0, 0, 0],
+            ],
+            [
+                [0, 0, 0, 0],
+                [1, 1, 1, 0],
+                [1, 0, 0, 0],
+                [0, 0, 0, 0],
+            ],
+            [
+                [1, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, 0],
+            ],
+        ],
+        "O": [
+            [
+                [1, 1, 0, 0],
+                [1, 1, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ]
+        ],
+        
+        // NOTE: will require adjust default position if "I"
+        "I": [
+            [
+                [0, 0, 0, 0],
+                [1, 1, 1, 1],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ],
+            [
+                [0, 0, 1, 0],
+                [0, 0, 1, 0],
+                [0, 0, 1, 0],
+                [0, 0, 1, 0],
+            ],
+            [
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [1, 1, 1, 1],
+                [0, 0, 0, 0],
+            ],
+            [
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
+            ],
+        ]
+    }
+
+    return blocks;
+
+}
 
 // Grid Info
 // NOTE: Make to change the CSS grid-templete if you change the row and col count
 let grid = [
-    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -369,6 +565,11 @@ function enableCtrls() {
     window.addEventListener("keydown", function(e) {
         if (e.key == " ") {
             placeBlock(ghostPos, blockPos);
+        }
+
+        // TEST: rotatePiece will ultimately use Up key
+        if (e.key == "r") {
+            rotatePiece();
         }
 
         if (keys.includes(e.key)) {
