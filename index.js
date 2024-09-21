@@ -1,3 +1,6 @@
+import { blockTypes } from "./block_types.js"
+import { createEleWithCls, deepCopy } from "./helpers.js"
+
 // Block Info
 let defaultBlockPos = {"x": 3, "y": 1}
 let blockPos = [];
@@ -26,14 +29,9 @@ function rotatePiece() {
     block = currentBlockType[rotationIndex];
     removeOldBlock(blockPos);
     placeRotatedPiece();
-
-    // TEST USE, but later, make a sep func that change position based where it currently is
-    // placeBlockDefaultPos();
-    // console.log(blockPos);
 }
 
 function placeRotatedPiece() {
-    // Reset blockPos
     blockPos = [];
 
     for (let row = 0; row < block.length; row++) {
@@ -41,12 +39,6 @@ function placeRotatedPiece() {
         for (let col = 0; col < block[row].length; col++) {
             let blockX = topLeftCoor["x"] + col;
 
-            // Save the top-left coor for rotation purposes
-            if (row == 0 && col == 0) {
-                topLeftCoor = {"x": blockX, "y": blockY};
-            }
-
-            // Only place non-zero values
             if (block[row][col] !== 0) { 
                 grid[blockY][blockX] = block[row][col];
                 saveBlockCoor(blockPos, blockX, blockY);
@@ -54,184 +46,8 @@ function placeRotatedPiece() {
         }
     }
 
-    // console.log(grid);
     updateBoard(grid);
     placeGhost(blockPos);
-}
-
-// Block Types
-function blockTypes() {
-    let blocks = {
-        "T": [
-            [
-                [0, 1, 0, 0],
-                [1, 1, 1, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-            ],
-            [
-                [0, 1, 0, 0],
-                [0, 1, 1, 0],
-                [0, 1, 0, 0],
-                [0, 0, 0, 0],
-            ],
-            [
-                [0, 0, 0, 0],
-                [1, 1, 1, 0],
-                [0, 1, 0, 0],
-                [0, 0, 0, 0],
-            ],
-            [
-                [0, 1, 0, 0],
-                [1, 1, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 0, 0],
-            ],
-        ],
-        "Z": [
-            [
-                [1, 1, 0, 0],
-                [0, 1, 1, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-            ],
-            [
-                [0, 0, 1, 0],
-                [0, 1, 1, 0],
-                [0, 1, 0, 0],
-                [0, 0, 0, 0],
-            ],
-            [
-                [0, 0, 0, 0],
-                [1, 1, 0, 0],
-                [0, 1, 1, 0],
-                [0, 0, 0, 0],
-            ],
-            [
-                [0, 1, 0, 0],
-                [1, 1, 0, 0],
-                [1, 0, 0, 0],
-                [0, 0, 0, 0],
-            ],
-        ],
-        "S": [
-            [
-                [0, 1, 1, 0],
-                [1, 1, 0, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-            ],
-            [
-                [0, 1, 0, 0],
-                [0, 1, 1, 0],
-                [0, 0, 1, 0],
-                [0, 0, 0, 0],
-            ],
-            [
-                [0, 0, 0, 0],
-                [0, 1, 1, 0],
-                [1, 1, 0, 0],
-                [0, 0, 0, 0],
-            ],
-            [
-                [1, 0, 0, 0],
-                [1, 1, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 0, 0],
-            ],
-        ],
-        "L": [
-            [
-                [1, 0, 0, 0],
-                [1, 1, 1, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-            ],
-            [
-                [0, 1, 1, 0],
-                [0, 1, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 0, 0],
-            ],
-            [
-                [0, 0, 0, 0],
-                [1, 1, 1, 0],
-                [0, 0, 1, 0],
-                [0, 0, 0, 0],
-            ],
-            [
-                [0, 1, 0, 0],
-                [0, 1, 0, 0],
-                [1, 1, 0, 0],
-                [0, 0, 0, 0],
-            ],
-        ],
-        "J": [
-            [
-                [0, 0, 1, 0],
-                [1, 1, 1, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-            ],
-            [
-                [0, 1, 0, 0],
-                [0, 1, 0, 0],
-                [0, 1, 1, 0],
-                [0, 0, 0, 0],
-            ],
-            [
-                [0, 0, 0, 0],
-                [1, 1, 1, 0],
-                [1, 0, 0, 0],
-                [0, 0, 0, 0],
-            ],
-            [
-                [1, 1, 0, 0],
-                [0, 1, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 0, 0],
-            ],
-        ],
-        "O": [
-            [
-                [1, 1, 0, 0],
-                [1, 1, 0, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-            ]
-        ],
-        
-        // NOTE: will require adjust default position if "I"
-        "I": [
-            [
-                [0, 0, 0, 0],
-                [1, 1, 1, 1],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-            ],
-            [
-                [0, 0, 1, 0],
-                [0, 0, 1, 0],
-                [0, 0, 1, 0],
-                [0, 0, 1, 0],
-            ],
-            [
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-                [1, 1, 1, 1],
-                [0, 0, 0, 0],
-            ],
-            [
-                [0, 1, 0, 0],
-                [0, 1, 0, 0],
-                [0, 1, 0, 0],
-                [0, 1, 0, 0],
-            ],
-        ]
-    }
-
-    return blocks;
-
 }
 
 // Grid Info
@@ -369,7 +185,6 @@ function placeBlockDefaultPos() {
 
     updateBoard(grid);
     placeGhost(blockPos);
-    console.log(topLeftCoor);
 }
 
 function placeBlock(ghostPos, blockPos) {
@@ -403,7 +218,7 @@ function removeOldBlock(blockPos) {
     }
 }
 
-// REUSABLES: Has been REUSED more than once
+// REUSED more than once
 function updatePieceCoors(pos, direction, ghost=false) {
     let updatedTopLeftCoors = false;    // Tracks top left coor for rotation use
 
@@ -411,13 +226,13 @@ function updatePieceCoors(pos, direction, ghost=false) {
         updateCoor(coor, direction);
         
         // FUTURE: Maybe this should be its own function in future
+        // Ghost is only reflected on DOM, not grid
         if (ghost == false) {
             grid[coor.y][coor.x] = 1;
 
-            // CHECKPOINT - I think it works
+            // Should only activate once or else each loop's coor will add to topLeftCoor
             if (updatedTopLeftCoors == false) {
                 updateCoor(topLeftCoor, direction);
-                // console.log(topLeftCoor);
                 updatedTopLeftCoors = true;
             }
         }
@@ -441,10 +256,6 @@ function updateCoor(coor, direction) {
     if (direction == "up") {
         coor.y -= 1;
     }
-}
-
-function deepCopy(item) {
-    return JSON.parse(JSON.stringify(item));
 }
 
 // SECTION: Ghost
@@ -673,28 +484,10 @@ function gameLoop() {
     setTimeout(gameLoop, 30);
 } 
 
-
-// REUSABLES
-function createEleWithCls(ele, clsArr) {
-    let element = document.createElement(ele);
-
-    for (let item of clsArr) {
-        element.classList.add(item);
-    }
-
-    return element;
-}
-
 function executeGame() {
     // createGrid(grid);
     updateBoard(grid);
     placeBlockDefaultPos();
-    // placeBlock(ghostPos, blockPos);
-
-    // TEST (bottom 3)
-    // checkBlockCollision(blockPos, "right");
-    // getOutermostCoors("y", "down")
-
     enableCtrls();
     gameLoop();
 }
