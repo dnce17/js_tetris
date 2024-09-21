@@ -1,14 +1,16 @@
 // Block Info
-let defaultBlockPos = {"x": 3, "y": 0}
+let defaultBlockPos = {"x": 3, "y": 1}
 let blockPos = [];
 // let block = [
 //     [0, 1, 0],
 //     [1, 1, 1],
 // ]
 
-let currentBlockType = blockTypes()["L"];
+// TEST USE: Will be changed later to be more dynamic
+let currentBlockType = blockTypes()["Z"];
 let rotationIndex = 0;
 let block = currentBlockType[rotationIndex];
+let topLeftCoor;
 
 let ghostPos;
 
@@ -21,12 +23,40 @@ function rotatePiece() {
         rotationIndex = 0;
     }
 
-    console.log(rotationIndex);
     block = currentBlockType[rotationIndex];
     removeOldBlock(blockPos);
+    placeRotatedPiece();
 
     // TEST USE, but later, make a sep func that change position based where it currently is
-    placeBlockDefaultPos();
+    // placeBlockDefaultPos();
+    // console.log(blockPos);
+}
+
+function placeRotatedPiece() {
+    // Reset blockPos
+    blockPos = [];
+
+    for (let row = 0; row < block.length; row++) {
+        let blockY = topLeftCoor["y"] + row;
+        for (let col = 0; col < block[row].length; col++) {
+            let blockX = topLeftCoor["x"] + col;
+
+            // Save the top-left coor for rotation purposes
+            if (row == 0 && col == 0) {
+                topLeftCoor = {"x": blockX, "y": blockY};
+            }
+
+            // Only place non-zero values
+            if (block[row][col] !== 0) { 
+                grid[blockY][blockX] = block[row][col];
+                saveBlockCoor(blockPos, blockX, blockY);
+            }
+        }
+    }
+
+    // console.log(grid);
+    updateBoard(grid);
+    placeGhost(blockPos);
 }
 
 // Block Types
@@ -323,6 +353,12 @@ function placeBlockDefaultPos() {
         let blockY = defaultBlockPos["y"] + row;
         for (let col = 0; col < block[row].length; col++) {
             let blockX = defaultBlockPos["x"] + col;
+
+            // Save the top-left coor for rotation purposes
+            if (row == 0 && col == 0) {
+                topLeftCoor = {"x": blockX, "y": blockY};
+            }
+
             // Only place non-zero values
             if (block[row][col] !== 0) { 
                 grid[blockY][blockX] = block[row][col];
@@ -333,6 +369,7 @@ function placeBlockDefaultPos() {
 
     updateBoard(grid);
     placeGhost(blockPos);
+    console.log(topLeftCoor);
 }
 
 function placeBlock(ghostPos, blockPos) {
@@ -354,7 +391,7 @@ function saveBlockCoor(blockPos, x, y) {
 
 function updateBlockPos(blockPos, direction) {
     removeOldBlock(blockPos);
-    addUpdatedPiece(blockPos, direction);
+    updatePieceCoors(blockPos, direction);
     updateBoard(grid);
 }
 
@@ -366,33 +403,46 @@ function removeOldBlock(blockPos) {
     }
 }
 
-// REUSABLE; has been reused too; MAYBE PLACE IN A "REUSUABLE SECTION"
-function addUpdatedPiece(pos, direction, ghost=false) {
+// REUSABLES: Has been REUSED more than once
+function updatePieceCoors(pos, direction, ghost=false) {
+    let updatedTopLeftCoors = false;    // Tracks top left coor for rotation use
+
     for (let coor of pos) {
-        if (direction == "down") {
-            coor.y += 1;
-        }
-
-        if (direction == "left") {
-            coor.x -= 1;
-        }
-
-        if (direction == "right") {
-            coor.x += 1;
-        }
-
-        // TEST USE ONLY
-        if (direction == "up") {
-            coor.y -= 1;
-        }
+        updateCoor(coor, direction);
         
+        // FUTURE: Maybe this should be its own function in future
         if (ghost == false) {
             grid[coor.y][coor.x] = 1;
+
+            // CHECKPOINT - I think it works
+            if (updatedTopLeftCoors == false) {
+                updateCoor(topLeftCoor, direction);
+                // console.log(topLeftCoor);
+                updatedTopLeftCoors = true;
+            }
         }
     }
 }
 
-// REUSABLE
+function updateCoor(coor, direction) {
+    if (direction == "down") {
+        coor.y += 1;
+    }
+
+    if (direction == "left") {
+        coor.x -= 1;
+    }
+
+    if (direction == "right") {
+        coor.x += 1;
+    }
+
+    // TEST USE ONLY
+    if (direction == "up") {
+        coor.y -= 1;
+    }
+}
+
 function deepCopy(item) {
     return JSON.parse(JSON.stringify(item));
 }
@@ -414,7 +464,7 @@ function calculateGhostPos(ghostPos, direction, TOTAL_COLUMN, TOTAL_ROW) {
     while(true) {
         if (checkCollision(ghostPos, direction, TOTAL_COLUMN, TOTAL_ROW) == false) {
             // Adds 1 to all y coors b/c safe (aka no obstacle), then checks (new y coor + 1) to see if obstacle
-            addUpdatedPiece(ghostPos, direction, true);
+            updatePieceCoors(ghostPos, direction, true);
         }
         else {
             break;
