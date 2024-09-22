@@ -11,7 +11,8 @@ body {
 }
 
 .hidden {
-    visibility: hidden;
+    /* visibility: hidden; */
+    opacity: 0.1;
 }
 
 .center {
@@ -49,7 +50,7 @@ body {
 
 .row {
     display: grid;
-    grid-template-columns: repeat(10, 1fr);
+    grid-template-columns: repeat(12, 1fr);
 }
 
 .cell {
@@ -59,7 +60,7 @@ body {
     height: 48px;
 }
 
-.cell:nth-child(10n) {
+.cell:nth-child(12n) {
     border-right: 1px solid black;
 }
 

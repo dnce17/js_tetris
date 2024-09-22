@@ -4,17 +4,13 @@ import { createEleWithCls, deepCopy } from "./helpers.js"
 // Block Info
 let defaultBlockPos = {"x": 3, "y": 1}
 let blockPos = [];
-// let block = [
-//     [0, 1, 0],
-//     [1, 1, 1],
-// ]
 
 // TEST USE: Will be changed later to be more dynamic
-let currentBlockType = blockTypes()["Z"];
+let currentBlockType = blockTypes()["L"];
 let rotationIndex = 0;
 let block = currentBlockType[rotationIndex];
-let topLeftCoor;
 
+let topLeftCoor;
 let ghostPos;
 
 // SECTION (IN PROGRESS): Block rotation
@@ -28,7 +24,33 @@ function rotatePiece() {
 
     block = currentBlockType[rotationIndex];
     removeOldBlock(blockPos);
+
+    checkRotationCollision();
     placeRotatedPiece();
+}
+
+// IN PROGRESS
+function checkRotationCollision() {
+    for (let row = 0; row < block.length; row++) {
+        let blockY = topLeftCoor["y"] + row;
+        for (let col = 0; col < block[row].length; col++) {
+            let blockX = topLeftCoor["x"] + col;
+            console.log(topLeftCoor);
+
+            if (block[row][col] !== 0) { 
+                // Check rotation overlap with BLOCK, not wall
+                if (grid[blockY][blockX] == 1) {
+                    console.log(`OVERLAP WITH: x: ${blockX}, y: ${blockY}`);
+                    // grid[blockY][blockX] = block[row][col];
+                }
+                else {
+                    console.log("No overlap");
+                }
+                // saveBlockCoor(blockPos, blockX, blockY);
+            }
+        }
+    }
+
 }
 
 function placeRotatedPiece() {
@@ -53,22 +75,26 @@ function placeRotatedPiece() {
 // Grid Info
 // NOTE: Make to change the CSS grid-templete if you change the row and col count
 let grid = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+
+    // TEST
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ]
 // let grid = [];
-let TOTAL_COLUMN = 10;
+let TOTAL_COLUMN = 12;
 
-// NOTE: 1st two rows will be filler rows in case blocks are rotated at the top of the board
-let TOTAL_ROW = 9;
-let FILLER_ROW = 1;
+// NOTE: Filler rows and cols are used to check for wall rotation collision
+let TOTAL_ROW = 10;
+let FILLER_ROW_INDEX = [0, TOTAL_ROW - 1];
+let FILLER_ROW_COLUMN = [0, TOTAL_COLUMN - 1];
 
 // Ctrls Info
 let keyState = {
@@ -122,17 +148,24 @@ function createBoard(board, grid) {
     for (let row = 0; row < TOTAL_ROW; row++) {
         let rowDiv;
 
-        // Create filler row
-        if (row < FILLER_ROW) {
+        // Create rows
+        if (row == FILLER_ROW_INDEX[0] || row == FILLER_ROW_INDEX[1]) {
+            // Create filler row
             rowDiv = createEleWithCls("div", ["row", "hidden"]);
         } 
         else {
             rowDiv = createEleWithCls("div", ["row"]);
         }
 
-        for (let col of grid[row]) {
-            if (col == 0) {
-                cell = createEleWithCls("div", ["cell"]);
+        // Create cols
+        for (let col = 0; col < grid[row].length; col++) {
+            if (grid[row][col] == 0) {
+                if (col == FILLER_ROW_COLUMN[0] || col == FILLER_ROW_COLUMN[1]) {
+                    cell = createEleWithCls("div", ["cell", "hidden"]);
+                }
+                else {
+                    cell = createEleWithCls("div", ["cell"]);
+                }
             }
             else {
                 cell = createEleWithCls("div", ["cell", "px"]);
@@ -311,15 +344,15 @@ function checkCollision(blockPos, direction, TOTAL_COLUMN, TOTAL_ROW) {
 
 function checkWallCollision(blockPos, direction, TOTAL_COLUMN, TOTAL_ROW) {
     for (let coor of blockPos) {
-        if (direction == "down" && coor.y + 1 >= TOTAL_ROW) {
+        if (direction == "down" && coor.y + 1 >= TOTAL_ROW - 1) {
             return true;
         }
 
-        if (direction == "left" && coor.x - 1 < 0) {
+        if (direction == "left" && coor.x - 1 < 1) {
             return true;
         }
 
-        if (direction == "right" && coor.x + 1 >= TOTAL_COLUMN) {
+        if (direction == "right" && coor.x + 1 >= TOTAL_COLUMN - 1) {
             return true;
         }
 
