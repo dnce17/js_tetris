@@ -15,41 +15,73 @@ let ghostPos;
 
 // SECTION (IN PROGRESS): Block rotation
 function rotatePiece() {
+    let rotatedBlock;
     if (rotationIndex != currentBlockType.length - 1) {
-        rotationIndex += 1;
+        rotatedBlock = currentBlockType[rotationIndex + 1];
     }
     else {
-        rotationIndex = 0;
+        rotatedBlock = currentBlockType[0];
     }
 
-    block = currentBlockType[rotationIndex];
-    removeOldBlock(blockPos);
-
-    checkRotationCollision();
-    placeRotatedPiece();
+    if (checkRotationCollision(topLeftCoor, rotatedBlock) == false) {
+        if (rotationIndex != currentBlockType.length - 1) {
+            rotationIndex += 1;
+        }
+        else {
+            rotationIndex = 0;
+        }
+    
+        block = currentBlockType[rotationIndex];
+        removeOldBlock(blockPos);
+        placeRotatedPiece();
+    }
 }
 
 // IN PROGRESS
-function checkRotationCollision() {
-    for (let row = 0; row < block.length; row++) {
+function checkRotationCollision(topLeftCoor, rotatedBlock) {
+    for (let row = 0; row < rotatedBlock.length; row++) {
         let blockY = topLeftCoor["y"] + row;
-        for (let col = 0; col < block[row].length; col++) {
+        for (let col = 0; col < rotatedBlock[row].length; col++) {
             let blockX = topLeftCoor["x"] + col;
-            console.log(topLeftCoor);
 
-            if (block[row][col] !== 0) { 
-                // Check rotation overlap with BLOCK, not wall
-                if (grid[blockY][blockX] == 1) {
-                    console.log(`OVERLAP WITH: x: ${blockX}, y: ${blockY}`);
-                    // grid[blockY][blockX] = block[row][col];
+            if (rotatedBlock[row][col] !== 0) { 
+                // Check col rotation overlap with WALL --> NO ERRORS YAY
+                if (blockX == FILLER_COL_INDEX[0] || blockX == FILLER_COL_INDEX[1]) {
+                    console.log(`column overlap at x: ${blockX}, y: ${blockY}`);
+                    return true;
+                }
+
+                // Check row rotation overlap with WALL --> TESTING
+                if (blockY == FILLER_ROW_INDEX[0] || blockY == FILLER_ROW_INDEX[1]) {
+                    console.log(`row overlap at y: ${blockX}, y: ${blockY}`);
+                    return true;
+                }
+
+                // Check rotation overlap with BLOCK
+                // Have grid ignore the 1 that's taken up by current moving block
+                let skip = false;
+                for (let coor of blockPos) {
+                    if (blockX == coor.x && blockY == coor.y) {
+                        skip = true;
+                        break;
+                    }
+                }
+
+                if (skip == false) {
+                    if (grid[blockY][blockX] == 1) {
+                        console.log(`OVERLAP WITH: x: ${blockX}, y: ${blockY}`);
+                        console.log(`topLeftCoor: ${topLeftCoor}`);
+                        return true;
+                    }
                 }
                 else {
-                    console.log("No overlap");
+                    continue;
                 }
-                // saveBlockCoor(blockPos, blockX, blockY);
             }
         }
     }
+
+    return false;
 
 }
 
@@ -78,12 +110,12 @@ let grid = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
 
     // TEST
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -94,7 +126,7 @@ let TOTAL_COLUMN = 12;
 // NOTE: Filler rows and cols are used to check for wall rotation collision
 let TOTAL_ROW = 10;
 let FILLER_ROW_INDEX = [0, TOTAL_ROW - 1];
-let FILLER_ROW_COLUMN = [0, TOTAL_COLUMN - 1];
+let FILLER_COL_INDEX = [0, TOTAL_COLUMN - 1];
 
 // Ctrls Info
 let keyState = {
@@ -160,7 +192,7 @@ function createBoard(board, grid) {
         // Create cols
         for (let col = 0; col < grid[row].length; col++) {
             if (grid[row][col] == 0) {
-                if (col == FILLER_ROW_COLUMN[0] || col == FILLER_ROW_COLUMN[1]) {
+                if (col == FILLER_COL_INDEX[0] || col == FILLER_COL_INDEX[1]) {
                     cell = createEleWithCls("div", ["cell", "hidden"]);
                 }
                 else {
