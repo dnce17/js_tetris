@@ -50,7 +50,7 @@ body {
 
 .row {
     display: grid;
-    grid-template-columns: repeat(12, 1fr);
+    grid-template-columns: repeat(10, 1fr);
 }
 
 .cell {
@@ -60,7 +60,7 @@ body {
     height: 48px;
 }
 
-.cell:nth-child(12n) {
+.cell:nth-child(10n) {
     border-right: 1px solid black;
 }
 
