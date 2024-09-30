@@ -12,7 +12,7 @@ const gridInfo = {
         [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     ],
@@ -206,41 +206,39 @@ function updateCoor(coor, direction) {
 // NOTE 1: Any changes to ghost position is solely changed in DOM and not grid b/c it's just visual aid
 // NOTE 2: placeGhost is based on blockPos and uses board DOM, 
 // so it should always be placed after funcs that alter blockPos and board DOM
-// function placeGhost(blockInfo) {
-//     blockInfo.ghostPos = deepCopy(blockInfo.currentPos);
-//     let ghostPos = blockInfo.ghostPos;
-//     let direction = "down";
+function placeGhost(ghostPos, blockPos, rows, cols) {
+    ghostPos = deepCopy(blockPos);
+    let direction = "down";
 
-//     calculateGhostPos(ghostPos, direction, blockInfo.cols, blockInfo.rows);
-//     displayGhost(ghostPos);
-// }
+    calculateGhostPos(ghostPos, rows, cols, direction);
+    displayGhost(ghostPos);
+}
 
-// function calculateGhostPos(ghostPos, direction, TOTAL_COLUMN, TOTAL_ROW) {
-//     // Loop until ghost hits wall or block
-//     while(true) {
-//         if (checkCollision(ghostPos, direction, TOTAL_COLUMN, TOTAL_ROW) == false) {
-//             // Adds 1 to all y coors b/c safe (aka no obstacle), then checks (new y coor + 1) to see if obstacle
-//             updatePieceCoors(ghostPos, direction, true);
-//         }
-//         else {
-//             break;
-//         }
-//     }
-// }
+function calculateGhostPos(ghostPos, rows, cols, direction) {
+    // Loop until ghost hits wall or block
+    while(true) {
+        if (checkCollision(ghostPos, rows, cols, gridInfo.grid, direction) == false) {
+            // Adds 1 to all y coors b/c safe (aka no obstacle), then checks (new y coor + 1) to see if obstacle
+            updatePieceCoors(ghostPos, blockInfo.topLeftCoor, gridInfo.grid, direction, true);
+        }
+        else {
+            break;
+        }
+    }
+}
 
-// function displayGhost(ghostPos) {
-//     // Match the ghostPos with DOM cells
-//     let board = document.querySelector(".board");
-//     for (let coor of ghostPos) {
-//         // row = children[coor.y], col = children[coor.x]
-//         let cell = board.children[coor.y].children[coor.x];
-//         cell.classList.add("ghost");
-//     }
-// }
+function displayGhost(ghostPos) {
+    // Match the ghostPos with DOM cells
+    let board = document.querySelector(".board");
+    for (let coor of ghostPos) {
+        // row = children[coor.y], col = children[coor.x]
+        let cell = board.children[coor.y].children[coor.x];
+        cell.classList.add("ghost");
+    }
+}
 
 // // SECTION: Collision
 function checkCollision(pos, rows, cols, grid, direction) {
-
     let wallCollision = checkWallCollision(pos, rows, cols, direction);
     if (wallCollision == true) {
         return true;
@@ -444,7 +442,7 @@ function gameLoop() {
         updatePieceCoors(blockInfo.currentPos, blockInfo.topLeftCoor, gridInfo.grid, direction);
         updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
 
-        // placeGhost(blockInfo.currentPos);
+        placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
     }
 
 
@@ -454,7 +452,8 @@ function gameLoop() {
 function executeGame() {
     placeBlockDefaultPos(blockInfo, gridInfo);
     updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
-    // placeGhost(blockInfo)
+    placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
+
     enableCtrls();
     gameLoop();
 }
