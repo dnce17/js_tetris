@@ -21,10 +21,10 @@ const gridInfo = {
 const blockInfo = {
     defaultPos: {"x": 4, "y": 1},
     currentPos: [],
-    ghostPos: null,
+    ghostPos: [],
 
     // Used so grid always knows where to overwrite current block with rotated block
-    topLeftCoor: null,
+    topLeftCoor: {},
 
     // FUTURE: Will be changed later to be more randomized
     currentType: blockTypes()["T"],
@@ -129,30 +129,27 @@ function placeBlockDefaultPos(blockInfo, gridInfo) {
             }
         }
     }
-    // placeGhost(blockPos);
+
+    updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
+    placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
 }
 
 function saveCoorToArr(arr, x, y) {
     arr.push({"x": x, "y": y});
 }
 
-// function placeBlock(ghostPos, blockPos) {
-//     // Remove block being controlled
-//     removeOldBlock(blockPos);
+function placeBlock(ghostPos, blockPos, grid) {
+    // Remove block being controlled
+    removeOldBlock(blockPos, grid);
 
-//     // Place block based on ghostPos
-//     for (let coor of ghostPos) {
-//         grid[coor.y][coor.x] = 1;
-//     }
+    // Place block based on ghostPos
+    for (let coor of ghostPos) {
+        grid[coor.y][coor.x] = 1;
+    }
 
-//     // New block appears
-//     placeBlockDefaultPos();
-// }
-
-//     removeOldBlock(blockPos);
-//     updatePieceCoors(blockPos, direction);
-//     updateBoard(grid);
-// }
+    // New block appears
+    placeBlockDefaultPos(blockInfo, gridInfo);
+}
 
 function removeOldBlock(blockPos, grid) {
     for (let coor of blockPos) {
@@ -207,7 +204,9 @@ function updateCoor(coor, direction) {
 // NOTE 2: placeGhost is based on blockPos and uses board DOM, 
 // so it should always be placed after funcs that alter blockPos and board DOM
 function placeGhost(ghostPos, blockPos, rows, cols) {
-    ghostPos = deepCopy(blockPos);
+    // Reset ghostPos; NOTE: I did not do ghostPos = [] b/c original would not be affected
+    ghostPos.length = 0;
+    deepCopy(blockPos).forEach(coor => ghostPos.push(coor));
     let direction = "down";
 
     calculateGhostPos(ghostPos, rows, cols, direction);
@@ -275,23 +274,6 @@ function checkWallCollision(pos, rows, cols, direction) {
 
     return false;
 }
-
-// function checkWallCollision(pos, rows, cols, direction) {
-//     const boundaryChecks = {
-//         down: (coor) => coor.y + 1 >= rows,
-//         left: (coor) => coor.x - 1 < 0,
-//         right: (coor) => coor.x + 1 >= cols,
-//         up: (coor) => coor.y - 1 < 0
-//     };
-
-//     for (let coor of pos) {
-//         if (boundaryChecks[direction](coor) == true) {
-//             return true;
-//         }
-//     }
-
-//     return false;
-// }
 
 function checkBlockCollision(pos, grid, direction) { 
     let outermostCoors;
@@ -398,9 +380,9 @@ function enableCtrls() {
     let keys = ["ArrowDown", "ArrowLeft", "ArrowRight", " ", "ArrowUp"];
 
     window.addEventListener("keydown", function(e) {
-        // if (e.key == " ") {
-        //     placeBlock(ghostPos, blockPos);
-        // }
+        if (e.key == " ") {
+            placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
+        }
 
         // TEST: rotatePiece will ultimately use Up key
         // if (e.key == "r") {
@@ -451,15 +433,9 @@ function gameLoop() {
 
 function executeGame() {
     placeBlockDefaultPos(blockInfo, gridInfo);
-    updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
-    placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
 
     enableCtrls();
     gameLoop();
 }
 
 executeGame();
-
-// NOTE: For parameters, I will just pass the object itself. For future
-// I might be more specific or remove it entirely as I'm basically working
-// with global variables in a way. I will see.
