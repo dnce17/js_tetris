@@ -1,287 +1,52 @@
 import { blockTypes, clockwiseKickData} from "./blocks_n_kicks.js"
 import { createEleWithCls, deepCopy } from "./helpers.js"
 
-// Block Info
-let defaultBlockPos = {"x": 1, "y": 2};
-let blockPos = [];
-
-// TEST USE: Will be changed later to be more dynamic
-let currentBlockType = blockTypes()["T"];
-let rotationIndex = 1;
-let block = currentBlockType[rotationIndex];
-
-// Top left coor saved, so grid always knows where to overwrite current block with rotated block
-let topLeftCoor;
-let ghostPos;
-
-// SECTION (IN PROGRESS): Block rotation
-// Add in parameters later
-function rotatePiece() {
-    // Uses seperate vars for collision testing before finalizing change to block + rotationIndex vars
-    let rotatedBlock;
-    if (rotationIndex != currentBlockType.length - 1) {
-        rotatedBlock = currentBlockType[rotationIndex + 1];
-    }
-    else {
-        rotatedBlock = currentBlockType[0];
-    }
-
-    if (checkRotationCollision(topLeftCoor, rotatedBlock) == false) {
-        // No collision, so finalize changes
-        rotationIndex != currentBlockType.length - 1 ? rotationIndex += 1 : rotationIndex = 0;
-        block = currentBlockType[rotationIndex];
-        removeOldBlock(blockPos);
-        placeRotatedPiece();
-
-        updateBoard(grid);
-        placeGhost(blockPos);
-    }
-    else {
-        // rotatedBlock at this point in time after checkRotationCollision is the initial rotated piece that will be 
-        // shifted with the other kick coor
-        testKickCoors(blockPos, rotatedBlock, rotationIndex + 1);
-    }
-    
+const gridInfo = {
+    rows: 9,
+    cols: 10,
+    fillerRows: 1,
+    grid: [
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+        [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ],
 }
 
-function testKickCoors(pos, initialRotatedBlock, rotationIndex) {
-    // let copyPos = deepCopy(pos);
-    let copyTopLeftCoor = deepCopy(topLeftCoor);
+const blockInfo = {
+    defaultPos: {"x": 4, "y": 1},
+    currentPos: [],
+    ghostPos: null,
 
-    console.log(initialRotatedBlock);
-    // console.log(rotationIndex);
-    // initialRotatedBlock [0, 0] has already been tested in checkRotationCollision
-    // Test the shifts now
-    if (rotationIndex == 2) {
-        // Since the rotationIndex of initialRotatedBlock = 2, then test the kickCoors of 2->3 
-            // Get the coor of initialRotatedBlock
-            let piecePos = [];
-            piecePos = savePieceCoor(initialRotatedBlock, topLeftCoor, piecePos);
-            // console.log(piecePos);
+    // Used so grid always knows where to overwrite current block with rotated block
+    topLeftCoor: null,
 
-            console.log("Grid");
-            console.log(grid);
+    // FUTURE: Will be changed later to be more randomized
+    currentType: blockTypes()["T"],
+    rotationIndex: 0,
+    block: null,
 
-            // Rename to shiftX, shiftY later
-            let kickCoorX;
-            let kickCoorY;
-            for (let kickCoor of KICK_DATA["2->3"]) {
-                let noOverlap = false;
-                for (let posCoor of piecePos) {
-                    // console.log(kickCoor[0], kickCoor[1]);
-                    // console.log(posCoor);
-                    kickCoorX = kickCoor[0];
-                    kickCoorY = kickCoor[1];
+    kickData: clockwiseKickData(),
+};
 
-                    posCoor.x += kickCoor[0];
-                    posCoor.y += kickCoor[1];
-                    // Check if any of the new coor overlaps
-                        // If so, move onto new kickCoor
-                        // pos.include b/c I never actually removed the unrotated block, so there would be issues if I did not ignore it   
-                        // when checking overlap
-                    if (grid[posCoor.y][posCoor.x] == 1 && pos.includes({"x": posCoor.x, "y": posCoor.y} == false)) {
-                        console.log(posCoor.x, posCoor.y);
-                        console.log("there is overlap in this cell");
-                        break;
-                    }
-                    else {
-                        // console.log(posCoor.x, posCoor.y);
-                        noOverlap = true;
-                        console.log("there is NO overlap in this cell");
-                    }
-                    
-                        
-                }
-                // Changing topLeftCoor should only happen once
-                copyTopLeftCoor.x += kickCoorX;
-                copyTopLeftCoor.y += kickCoorY;
-                console.log(piecePos);
-                console.log(copyTopLeftCoor);
-
-                // Testing if 1 shift works --> update grid with that
-                if (noOverlap == true) {
-                    removeOldBlock(pos);
-                    for (let coor of piecePos) {
-                        grid[coor.y][coor.x] = 1;
-                    }
-
-                    updateBoard(grid);
-                    placeGhost(piecePos);
-
-                    blockPos = piecePos;
-                    console.log(blockPos);
-                    break;
-                }
-
-            }
-            // apply each shift per loop 
-            // Test overlap
-            // if overlap, test next loop
-    }
-}
-
-// There's also saveBlockCoor, so depending on how this goes, I might refactor the other
-function savePieceCoor(piece, topLeftCoor, piecePos) {
-    for (let row = 0; row < piece.length; row++) {
-        let pieceY = topLeftCoor["y"] + row;
-        for (let col = 0; col < piece[row].length; col++) {
-            let pieceX = topLeftCoor["x"] + col;
-
-            if (piece[row][col] !== 0) { 
-                saveBlockCoor(piecePos, pieceX, pieceY);
-            }
-        }
-    }
-
-    return piecePos;
-}
-
-function checkRotationCollision(topLeftCoor, rotatedBlock) {
-    for (let row = 0; row < rotatedBlock.length; row++) {
-        let blockY = topLeftCoor["y"] + row;
-        for (let col = 0; col < rotatedBlock[row].length; col++) {
-            let blockX = topLeftCoor["x"] + col;
-
-            if (rotatedBlock[row][col] !== 0) { 
-                // Check rotation overlap with WALL
-                let beyondWall = checkBeyondWall(blockX, blockY, TOTAL_COLUMN, TOTAL_ROW, FILLER_ROW);
-                if (beyondWall == true) {
-                    return true;
-                }
-
-                // Check rotation overlap with BLOCK
-                if (skipBlockOverlapCheck(blockPos, blockX, blockY) == true) {
-                    // Ignore overlap check with self (the rotated and unrotated block still on grid)
-                    continue;
-                }
-
-                if (checkBlockOverlap(grid, blockX, blockY) == true) {
-                    return true;
-                }
-            }
-        }
-    }
-
-    return false;
-
-}
-
-function checkBeyondWall(blockCoorX, blockCoorY, total_column, total_row, filler_row) {
-    // Check COL rotation overlap w/ WALL
-    if (blockCoorX > total_column - 1 || blockCoorX < 0) {
-        console.log(`column overlap at x: ${blockCoorX}, y: ${blockCoorY}`);
-        return true;
-    }
-
-    // Check ROW rotation overlap w/ WALL
-    if (blockCoorY > total_row - filler_row) {
-        console.log(`row overlap at x: ${blockCoorX}, y: ${blockCoorY}`);
-        return true;
-    }
-
-    return false
-}
-
-function skipBlockOverlapCheck(blockPos, blockCoorX, blockCoorY) {
-    // Rotated block is tested, but unrotated block is still present on grid
-    // Don't want to test rotated block overlap against current block or else error
-    for (let coor of blockPos) {
-        if (blockCoorX == coor.x && blockCoorY == coor.y) {
-            return true
-        }
-    }
-    
-    return false;
-}
-
-function checkBlockOverlap(grid, blockCoorX, blockCoorY) {  
-    // 1 = overlap with set block
-    if (grid[blockCoorY][blockCoorX] == 1) {
-        console.log(`OVERLAP WITH: x: ${blockCoorX}, y: ${blockCoorY}`);
-        console.log(`topLeftCoor: ${topLeftCoor}`);
-        return true;
-    }
-
-    return false;
-}
-
-function placeRotatedPiece() {
-    blockPos = [];
-
-    for (let row = 0; row < block.length; row++) {
-        let blockY = topLeftCoor["y"] + row;
-        for (let col = 0; col < block[row].length; col++) {
-            let blockX = topLeftCoor["x"] + col;
-
-            if (block[row][col] !== 0) { 
-                grid[blockY][blockX] = block[row][col];
-                saveBlockCoor(blockPos, blockX, blockY);
-            }
-        }
-    }
-
-    // Might move to the rotatePiece() func, so I can reuse code above in this func
-    // updateBoard(grid);
-    // placeGhost(blockPos);
-
-    // console.log(rotationIndex);
-}
-
-// Grid Info
-// NOTE: Make to change the CSS grid-templete if you change the row and col count
-let grid = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 0, 0, 1, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-]
-// let grid = [];
-let TOTAL_COLUMN = 10;
-
-// NOTE: 1st two rows will be filler rows in case blocks are rotated at the top of the board
-let TOTAL_ROW = 9;
-let FILLER_ROW = 1;
-let KICK_DATA = clockwiseKickData();
-
-// Ctrls Info
-let keyState = {
+const keyState = {
     "ArrowDown": null,
     "ArrowLeft": null,
     "ArrowRight": null,
     " ": null
 };
 
-// SECTION: Grid (dynamically made)
-function createGrid(grid) {
-    for (let row = 0; row < TOTAL_ROW; row++) {
-        let rowArr = [];
-        for (let col = 0; col < TOTAL_COLUMN; col++) {
-            rowArr.push(0);
-
-            // TEST USE --> insert random obstacles
-            // let coin = Math.random() < 0.80 ? 'Heads' : 'Tails';
-            // if (coin == "Heads") {
-            //     rowArr.push(0);
-            // }
-            // else {
-            //     rowArr.push(1);
-            // }
-        }
-        grid.push(rowArr);
-    }
-}
-
 // SECTION: Board
-function updateBoard(grid) {
+function updateBoard(grid, rows, fillerRows) {
     // Delete and update board w/ updated grid
     let board = document.querySelector(".board");
     removeOldBoard(board);
-    createBoard(board, grid);
+    createBoard(board, grid, rows, fillerRows);
 }
 
 function removeOldBoard(board) {
@@ -294,14 +59,14 @@ function removeOldBoard(board) {
     }
 }
 
-function createBoard(board, grid) {
+function createBoard(board, grid, rows, fillerRows) {
     // Create board cell + px 
     let cell;
-    for (let row = 0; row < TOTAL_ROW; row++) {
+    for (let row = 0; row < rows; row++) {
         let rowDiv;
 
         // Create filler row
-        if (row < FILLER_ROW) {
+        if (row < fillerRows) {
             rowDiv = createEleWithCls("div", ["row", "hidden"]);
         } 
         else {
@@ -326,7 +91,7 @@ function createBoard(board, grid) {
     addGridLabels();
 }
 
-// TEST USE
+// // TEST USE
 function addGridLabels() {
     let board = document.querySelector(".board");
     for (let row = 0; row < board.children.length; row++) {
@@ -339,56 +104,57 @@ function addGridLabels() {
 }
 
 // SECTION: Place block
-function placeBlockDefaultPos() {
-    // Reset blockPos
-    blockPos = [];
+function placeBlockDefaultPos(blockInfo, gridInfo) {
+    // Reset blockPos & create block type
+    blockInfo.currentPos = [];
+    blockInfo.block = blockInfo.currentType[blockInfo.rotationIndex];
+
+    let block = blockInfo.block;
+    let defaultPos = blockInfo.defaultPos;
 
     for (let row = 0; row < block.length; row++) {
-        let blockY = defaultBlockPos["y"] + row;
+        let blockY = defaultPos["y"] + row;
         for (let col = 0; col < block[row].length; col++) {
-            let blockX = defaultBlockPos["x"] + col;
+            let blockX = defaultPos["x"] + col;
 
             // Save the top-left coor for rotation purposes
             if (row == 0 && col == 0) {
-                topLeftCoor = {"x": blockX, "y": blockY};
+                blockInfo.topLeftCoor = {"x": blockX, "y": blockY};
             }
 
             // Only place non-zero values
             if (block[row][col] !== 0) { 
-                grid[blockY][blockX] = block[row][col];
-                saveBlockCoor(blockPos, blockX, blockY);
+                gridInfo.grid[blockY][blockX] = block[row][col];
+                saveCoorToArr(blockInfo.currentPos, blockX, blockY);
             }
         }
     }
-
-    updateBoard(grid);
-    placeGhost(blockPos);
+    // placeGhost(blockPos);
 }
 
-function placeBlock(ghostPos, blockPos) {
-    // Remove block being controlled
-    removeOldBlock(blockPos);
-
-    // Place block based on ghostPos
-    for (let coor of ghostPos) {
-        grid[coor.y][coor.x] = 1;
-    }
-
-    // New block appears
-    placeBlockDefaultPos();
+function saveCoorToArr(arr, x, y) {
+    arr.push({"x": x, "y": y});
 }
 
-function saveBlockCoor(blockPos, x, y) {
-    blockPos.push({"x": x, "y": y});
-}
+// function placeBlock(ghostPos, blockPos) {
+//     // Remove block being controlled
+//     removeOldBlock(blockPos);
 
-function updateBlockPos(blockPos, direction) {
-    removeOldBlock(blockPos);
-    updatePieceCoors(blockPos, direction);
-    updateBoard(grid);
-}
+//     // Place block based on ghostPos
+//     for (let coor of ghostPos) {
+//         grid[coor.y][coor.x] = 1;
+//     }
 
-function removeOldBlock(blockPos) {
+//     // New block appears
+//     placeBlockDefaultPos();
+// }
+
+//     removeOldBlock(blockPos);
+//     updatePieceCoors(blockPos, direction);
+//     updateBoard(grid);
+// }
+
+function removeOldBlock(blockPos, grid) {
     for (let coor of blockPos) {
         if (grid[coor.y][coor.x] == 1) {
             grid[coor.y][coor.x] = 0;
@@ -396,8 +162,8 @@ function removeOldBlock(blockPos) {
     }
 }
 
-// REUSED more than once
-function updatePieceCoors(pos, direction, ghost=false) {
+// // REUSED more than once
+function updatePieceCoors(pos, topLeftCoor, grid, direction, ghost=false) {
     let updatedTopLeftCoors = false;    // Tracks top left coor for rotation use
 
     for (let coor of pos) {
@@ -440,46 +206,47 @@ function updateCoor(coor, direction) {
 // NOTE 1: Any changes to ghost position is solely changed in DOM and not grid b/c it's just visual aid
 // NOTE 2: placeGhost is based on blockPos and uses board DOM, 
 // so it should always be placed after funcs that alter blockPos and board DOM
-function placeGhost(blockPos) {
-    ghostPos = deepCopy(blockPos);
-    let direction = "down";
+// function placeGhost(blockInfo) {
+//     blockInfo.ghostPos = deepCopy(blockInfo.currentPos);
+//     let ghostPos = blockInfo.ghostPos;
+//     let direction = "down";
 
-    calculateGhostPos(ghostPos, direction, TOTAL_COLUMN, TOTAL_ROW);
-    displayGhost(ghostPos);
-}
+//     calculateGhostPos(ghostPos, direction, blockInfo.cols, blockInfo.rows);
+//     displayGhost(ghostPos);
+// }
 
-function calculateGhostPos(ghostPos, direction, TOTAL_COLUMN, TOTAL_ROW) {
-    // Loop until ghost hits wall or block
-    while(true) {
-        if (checkCollision(ghostPos, direction, TOTAL_COLUMN, TOTAL_ROW) == false) {
-            // Adds 1 to all y coors b/c safe (aka no obstacle), then checks (new y coor + 1) to see if obstacle
-            updatePieceCoors(ghostPos, direction, true);
-        }
-        else {
-            break;
-        }
-    }
-}
+// function calculateGhostPos(ghostPos, direction, TOTAL_COLUMN, TOTAL_ROW) {
+//     // Loop until ghost hits wall or block
+//     while(true) {
+//         if (checkCollision(ghostPos, direction, TOTAL_COLUMN, TOTAL_ROW) == false) {
+//             // Adds 1 to all y coors b/c safe (aka no obstacle), then checks (new y coor + 1) to see if obstacle
+//             updatePieceCoors(ghostPos, direction, true);
+//         }
+//         else {
+//             break;
+//         }
+//     }
+// }
 
-function displayGhost(ghostPos) {
-    // Match the ghostPos with DOM cells
-    let board = document.querySelector(".board");
-    for (let coor of ghostPos) {
-        // row = children[coor.y], col = children[coor.x]
-        let cell = board.children[coor.y].children[coor.x];
-        cell.classList.add("ghost");
-    }
-}
+// function displayGhost(ghostPos) {
+//     // Match the ghostPos with DOM cells
+//     let board = document.querySelector(".board");
+//     for (let coor of ghostPos) {
+//         // row = children[coor.y], col = children[coor.x]
+//         let cell = board.children[coor.y].children[coor.x];
+//         cell.classList.add("ghost");
+//     }
+// }
 
-// SECTION: Collision
-function checkCollision(blockPos, direction, TOTAL_COLUMN, TOTAL_ROW) {
+// // SECTION: Collision
+function checkCollision(pos, rows, cols, grid, direction) {
 
-    let wallCollision = checkWallCollision(blockPos, direction, TOTAL_COLUMN, TOTAL_ROW);
+    let wallCollision = checkWallCollision(pos, rows, cols, direction);
     if (wallCollision == true) {
         return true;
     }
 
-    let blockCollision = checkBlockCollision(blockPos, direction);
+    let blockCollision = checkBlockCollision(pos, grid, direction);
     if (blockCollision == true) {
         return true;
     }
@@ -487,9 +254,10 @@ function checkCollision(blockPos, direction, TOTAL_COLUMN, TOTAL_ROW) {
     return false;
 }
 
-function checkWallCollision(blockPos, direction, TOTAL_COLUMN, TOTAL_ROW) {
-    for (let coor of blockPos) {
-        if (direction == "down" && coor.y + 1 >= TOTAL_ROW) {
+// CHECKPOINT!!!
+function checkWallCollision(pos, rows, cols, direction) {
+    for (let coor of pos) {
+        if (direction == "down" && coor.y + 1 >= rows) {
             return true;
         }
 
@@ -497,7 +265,7 @@ function checkWallCollision(blockPos, direction, TOTAL_COLUMN, TOTAL_ROW) {
             return true;
         }
 
-        if (direction == "right" && coor.x + 1 >= TOTAL_COLUMN) {
+        if (direction == "right" && coor.x + 1 >= cols) {
             return true;
         }
 
@@ -510,13 +278,30 @@ function checkWallCollision(blockPos, direction, TOTAL_COLUMN, TOTAL_ROW) {
     return false;
 }
 
-function checkBlockCollision(blockPos, direction) { 
+// function checkWallCollision(pos, rows, cols, direction) {
+//     const boundaryChecks = {
+//         down: (coor) => coor.y + 1 >= rows,
+//         left: (coor) => coor.x - 1 < 0,
+//         right: (coor) => coor.x + 1 >= cols,
+//         up: (coor) => coor.y - 1 < 0
+//     };
+
+//     for (let coor of pos) {
+//         if (boundaryChecks[direction](coor) == true) {
+//             return true;
+//         }
+//     }
+
+//     return false;
+// }
+
+function checkBlockCollision(pos, grid, direction) { 
     let outermostCoors;
     if (direction == "down") {
-        outermostCoors = getOutermostCoors(blockPos, "y", direction);
+        outermostCoors = getOutermostCoors(pos, "y", direction);
     }
     else {
-        outermostCoors = getOutermostCoors(blockPos, "x", direction);
+        outermostCoors = getOutermostCoors(pos, "x", direction);
     }
 
     for (let coor of outermostCoors) {
@@ -539,7 +324,7 @@ function checkBlockCollision(blockPos, direction) {
     return false;
 }
 
-function getOutermostCoors(blockPos, axis, direction) {
+function getOutermostCoors(pos, axis, direction) {
     // Gets the outermost x or y coors for block collision check, depending on directions
     // ****NOTE: there may be more than 1 outermost coors
         // E.g. a block that has at least px in each row will have 3 outermost x
@@ -550,21 +335,21 @@ function getOutermostCoors(blockPos, axis, direction) {
     let outermostCoors = [];
     if (axis == "x" && (direction == "right" || direction == "left")) {
         // Group all y coors
-        groupedAxis = groupByAxis("y", blockPos);
+        groupedAxis = groupByAxis("y", pos);
         outermostCoors = processOutermostCoors("y", groupedAxis, direction);
     }
 
     if (axis == "y" && direction == "down") {
         // Group all x coors
-        groupedAxis = groupByAxis("x", blockPos);
+        groupedAxis = groupByAxis("x", pos);
         outermostCoors = processOutermostCoors("x", groupedAxis, direction);
     }
 
     return outermostCoors;
 }
 
-function groupByAxis(axis, blockPos) {
-    return blockPos.reduce((acc, coorObj) => {
+function groupByAxis(axis, pos) {
+    return pos.reduce((acc, coorObj) => {
         let coorVal = coorObj[axis];
         if (!acc[coorVal]) {
           acc[coorVal] = [];
@@ -595,34 +380,34 @@ function processOutermostCoors(axis, groupedAxisDict, direction) {
     }
 }
 
-// SECTION: line clear
-function clear_line() {
-    let test_grid = [
-        [0, 0, 0, 0, 0, 1],
-        [1, 1, 1, 0, 0, 0],
-        [1, 1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1],
-        [0, 1, 0, 0, 0, 0],
-        [0, 1, 1, 1, 1, 1],
-    ]
+// // SECTION: line clear
+// function clear_line() {
+//     let test_grid = [
+//         [0, 0, 0, 0, 0, 1],
+//         [1, 1, 1, 0, 0, 0],
+//         [1, 1, 1, 1, 1, 1],
+//         [1, 1, 1, 1, 1, 1],
+//         [0, 1, 0, 0, 0, 0],
+//         [0, 1, 1, 1, 1, 1],
+//     ]
 
-    test_grid = test_grid.filter(row => String(row) !== String([1, 1, 1, 1, 1, 1]));
-    console.log(test_grid);
-}
+//     test_grid = test_grid.filter(row => String(row) !== String([1, 1, 1, 1, 1, 1]));
+//     console.log(test_grid);
+// }
 
-// SECTION: Moving block
+// // SECTION: Moving block
 function enableCtrls() {
     let keys = ["ArrowDown", "ArrowLeft", "ArrowRight", " ", "ArrowUp"];
 
     window.addEventListener("keydown", function(e) {
-        if (e.key == " ") {
-            placeBlock(ghostPos, blockPos);
-        }
+        // if (e.key == " ") {
+        //     placeBlock(ghostPos, blockPos);
+        // }
 
         // TEST: rotatePiece will ultimately use Up key
-        if (e.key == "r") {
-            rotatePiece();
-        }
+        // if (e.key == "r") {
+        //     rotatePiece();
+        // }
 
         if (keys.includes(e.key)) {
             keyState[e.key] = true;
@@ -654,20 +439,28 @@ function gameLoop() {
     }
 
     // NOTE: if you want diagonal movement, put this in each if statement
-    if (direction != null && checkCollision(blockPos, direction, TOTAL_COLUMN, TOTAL_ROW) == false) {
-        updateBlockPos(blockPos, direction);
-        placeGhost(blockPos);
+    if (direction != null && checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, direction) == false) {
+        removeOldBlock(blockInfo.currentPos, gridInfo.grid);
+        updatePieceCoors(blockInfo.currentPos, blockInfo.topLeftCoor, gridInfo.grid, direction);
+        updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
+
+        // placeGhost(blockInfo.currentPos);
     }
+
 
     setTimeout(gameLoop, 30);
 } 
 
 function executeGame() {
-    // createGrid(grid);
-    updateBoard(grid);
-    placeBlockDefaultPos();
+    placeBlockDefaultPos(blockInfo, gridInfo);
+    updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
+    // placeGhost(blockInfo)
     enableCtrls();
     gameLoop();
 }
 
 executeGame();
+
+// NOTE: For parameters, I will just pass the object itself. For future
+// I might be more specific or remove it entirely as I'm basically working
+// with global variables in a way. I will see.
