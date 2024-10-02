@@ -7,14 +7,14 @@ const gridInfo = {
     fillerRows: 1,
     grid: [
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
         [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
     ],
 }
 
@@ -27,7 +27,7 @@ const blockInfo = {
     topLeftCoor: {},
 
     // FUTURE: Will be changed later to be more randomized
-    currentType: blockTypes()["T"],
+    currentType: blockTypes()["O"],
     rotationIndex: 0,
     block: null,
 
@@ -148,6 +148,7 @@ function placeBlock(ghostPos, blockPos, grid) {
     }
 
     // New block appears
+    clearLine(gridInfo);
     placeBlockDefaultPos(blockInfo, gridInfo);
 }
 
@@ -360,20 +361,37 @@ function processOutermostCoors(axis, groupedAxisDict, direction) {
     }
 }
 
-// // SECTION: line clear
-// function clear_line() {
-//     let test_grid = [
-//         [0, 0, 0, 0, 0, 1],
+// SECTION: line clear
+// function clearLine() {
+//     // TEST
+//     let totalRow = 6;
+//     let testGrid = [
+//         [0, 0, 0, 0, 0, 0],
 //         [1, 1, 1, 0, 0, 0],
 //         [1, 1, 1, 1, 1, 1],
 //         [1, 1, 1, 1, 1, 1],
-//         [0, 1, 0, 0, 0, 0],
+//         [0, 1, 1, 1, 1, 1],
 //         [0, 1, 1, 1, 1, 1],
 //     ]
 
-//     test_grid = test_grid.filter(row => String(row) !== String([1, 1, 1, 1, 1, 1]));
-//     console.log(test_grid);
+//     testGrid = testGrid.filter(row => String(row) !== String([1, 1, 1, 1, 1, 1]));
+
+//     while (testGrid.length < 6) {
+//         testGrid.unshift([0,0,0,0,0,0]);
+//     }
+//     console.log(testGrid);
 // }
+
+function clearLine(gridInfo) {
+    let clearedGrid = gridInfo.grid.filter(row => String(row) !== String([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]));
+
+    while (clearedGrid.length < gridInfo.rows) {
+        clearedGrid.unshift([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    }
+
+    gridInfo.grid = clearedGrid;
+    updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
+}
 
 // // SECTION: Moving block
 function enableCtrls() {
@@ -433,7 +451,6 @@ function gameLoop() {
 
 function executeGame() {
     placeBlockDefaultPos(blockInfo, gridInfo);
-
     enableCtrls();
     gameLoop();
 }
