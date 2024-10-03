@@ -13,8 +13,8 @@ const gridInfo = {
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
     ],
 }
 
@@ -26,8 +26,9 @@ const blockInfo = {
     // Used so grid always knows where to overwrite current block with rotated block
     topLeftCoor: {},
 
-    // FUTURE: Will be changed later to be more randomized
+    // TEST USE for implementing rotation collision
     currentType: blockTypes()["O"],
+
     rotationIndex: 0,
     block: null,
 
@@ -134,6 +135,9 @@ function refillBag(bag) {
 function placeBlockDefaultPos(blockInfo, gridInfo) {
     // Reset blockPos & create block type
     blockInfo.currentPos = [];
+    // blockInfo.block = getBlock(blockInfo.bag);
+
+    // TEST USE when implementing rotation collision
     blockInfo.block = blockInfo.currentType[blockInfo.rotationIndex];
 
     let block = blockInfo.block;
