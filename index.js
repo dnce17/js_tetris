@@ -32,7 +32,10 @@ const blockInfo = {
     block: null,
 
     kickData: clockwiseKickData(),
-};
+    
+    // Will use 7-bag randomizer type
+    bag: Object.keys(blockTypes())
+}; 
 
 const keyState = {
     "ArrowDown": null,
@@ -101,6 +104,30 @@ function addGridLabels() {
             currentCol.innerHTML = `${col}, ${row}`;
         }
     }
+}
+
+// SECTION: Random block generator - CHECKPOINT
+function getBlock(bag) {
+    let val = Math.floor(Math.random() * bag.length);
+    let block = bag[val];
+    removeBlockFromBag(bag, block);
+
+    if (bag.length == 0) {
+        refillBag(bag);
+    }
+
+    return blockTypes()[block][0];
+}
+
+function removeBlockFromBag(bag, block) {
+    let index = bag.indexOf(block);
+    if (index > -1) {
+        bag.splice(index, 1);
+    }
+}
+
+function refillBag(bag) {
+    Object.keys(blockTypes()).forEach(block => bag.push(block));
 }
 
 // SECTION: Place block
@@ -361,27 +388,7 @@ function processOutermostCoors(axis, groupedAxisDict, direction) {
     }
 }
 
-// SECTION: line clear
-// function clearLine() {
-//     // TEST
-//     let totalRow = 6;
-//     let testGrid = [
-//         [0, 0, 0, 0, 0, 0],
-//         [1, 1, 1, 0, 0, 0],
-//         [1, 1, 1, 1, 1, 1],
-//         [1, 1, 1, 1, 1, 1],
-//         [0, 1, 1, 1, 1, 1],
-//         [0, 1, 1, 1, 1, 1],
-//     ]
-
-//     testGrid = testGrid.filter(row => String(row) !== String([1, 1, 1, 1, 1, 1]));
-
-//     while (testGrid.length < 6) {
-//         testGrid.unshift([0,0,0,0,0,0]);
-//     }
-//     console.log(testGrid);
-// }
-
+// SECTION: Line Clear
 function clearLine(gridInfo) {
     let clearedGrid = gridInfo.grid.filter(row => String(row) !== String([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]));
 
