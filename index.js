@@ -27,7 +27,7 @@ const blockInfo = {
     topLeftCoor: {},
 
     // TEST USE for implementing rotation collision
-    currentType: blockTypes()["O"],
+    currentType: blockTypes()["L"],
 
     rotationIndex: 0,
     block: null,
@@ -44,6 +44,100 @@ const keyState = {
     "ArrowRight": null,
     " ": null
 };
+
+// CHECKPOINT: Rotation Collision
+// SECTION: Rotation Collision
+function rotateBlock() {
+    // Save the unrotated piece; if all test fails, block will go back to that
+    // ALTERNATIVE (in later code), make a dup grid to test the rotations on. If all fail, go back to that old grid
+
+    // In case all test fails and rotation will not occur 
+    let unrotatedBlock = deepCopy(blockInfo.currentPos);
+    let oldRotationIndex = deepCopy(blockInfo.rotationIndex);
+
+    updateRotationIndex(blockInfo);
+    let rotatedBlock = blockInfo.currentType[blockInfo.rotationIndex];
+
+    // Remove current block from grid (board unaffected) for testing
+    removeOldBlock(blockInfo.currentPos, gridInfo.grid);
+
+    // Checks 1 px of block at a time and if occupied by grid already
+    let failed = false;
+    console.log(rotatedBlock);
+    console.log(blockInfo.topLeftCoor);
+    console.log(blockInfo.rotationIndex);
+    for (let row = 0; row < rotatedBlock.length; row++) {
+        let blockY = blockInfo.topLeftCoor["y"] + row;
+        for (let col = 0; col < rotatedBlock[row].length; col++) {
+            let blockX = blockInfo.topLeftCoor["x"] + col;
+
+            // blockX and blockY can go out of bound b/c blocks use 4x4, so exclude these
+            if (blockY < gridInfo.rows &&  blockX < gridInfo.cols) {
+                console.log(`gridInfo ${blockX}, ${blockY}`);
+                if (checkRotationCollision(gridInfo.grid[blockY][blockX], rotatedBlock[row][col]) == true) {
+                    // true == Intial rotation failed
+                        // Start kick test
+                        // UNDER CONSTRUCTION
+                    console.log("Initial rotation failed");
+                    failed = true;
+                    blockInfo.rotationIndex = oldRotationIndex;
+                }
+                else {
+                    console.log("This particular px has no overlap with grid cell");
+                }
+            }
+            else {
+                console.log("BEYOND WALL");
+                console.log(`gridInfo ${blockX}, ${blockY}`);
+            }   
+        }
+    }
+    
+    // Initial rotation is successful
+    if (failed == false) {
+        finalizeRotation(rotatedBlock);
+        updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
+        placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
+    }
+}
+
+function updateRotationIndex(blockInfo) {
+    if (blockInfo.rotationIndex < blockInfo.currentType.length - 1) {
+        blockInfo.rotationIndex += 1;
+    }
+    else {
+        blockInfo.rotationIndex = 0;
+    }
+}
+
+function checkRotationCollision(cell, rotatedBlockPx) {
+    if (rotatedBlockPx == 1 && cell == 1) {
+        return true;
+    } 
+    return false;
+}
+
+function finalizeRotation(rotatedBlock) {
+    blockInfo.currentPos = [];
+
+    for (let row = 0; row < rotatedBlock.length; row++) {
+        let blockY = blockInfo.topLeftCoor["y"] + row;
+        for (let col = 0; col < rotatedBlock[row].length; col++) {
+            let blockX = blockInfo.topLeftCoor["x"] + col;
+
+            if (row == 0 && col == 0) {
+                blockInfo.topLeftCoor = {"x": blockX, "y": blockY};
+            }
+
+            // Only place non-zero values
+            if (rotatedBlock[row][col] !== 0) { 
+                gridInfo.grid[blockY][blockX] = rotatedBlock[row][col];
+                saveCoorToArr(blockInfo.currentPos, blockX, blockY);
+            }
+                
+        }   
+    }
+}
 
 // SECTION: Board
 function updateBoard(grid, rows, fillerRows) {
@@ -318,17 +412,17 @@ function checkBlockCollision(pos, grid, direction) {
 
     for (let coor of outermostCoors) {
         if (direction == "right" && grid[coor.y][coor.x + 1] == 1) {
-            console.log("right collision");
+            // console.log("right collision");
             return true;
         }
 
         if (direction == "left" && grid[coor.y][coor.x - 1] == 1) {
-            console.log("left collision");
+            // console.log("left collision");
             return true;
         }
 
         if (direction == "down" && grid[coor.y + 1][coor.x] == 1) {
-            console.log("down collision");
+            // console.log("down collision");
             return true;
         }
     }
@@ -413,10 +507,10 @@ function enableCtrls() {
             placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
         }
 
-        // TEST: rotatePiece will ultimately use Up key
-        // if (e.key == "r") {
-        //     rotatePiece();
-        // }
+        // TEST: rotateBlock will ultimately use Up key
+        if (e.key == "r") {
+            rotateBlock();
+        }
 
         if (keys.includes(e.key)) {
             keyState[e.key] = true;
@@ -464,6 +558,10 @@ function executeGame() {
     placeBlockDefaultPos(blockInfo, gridInfo);
     enableCtrls();
     gameLoop();
+
+    // TEST
+    // rotateBlock();
+
 }
 
 executeGame();
