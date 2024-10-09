@@ -39,7 +39,7 @@ const blockInfo = {
     topLeftCoor: {},
 
     // TEST USE for implementing rotation collision
-    currentType: blockTypes()["T"],
+    currentType: blockTypes()["S"],
 
     rotationIndex: 0,
     block: null,
@@ -64,7 +64,7 @@ function rotateBlock() {
     // ALTERNATIVE (in later code), make a dup grid to test the rotations on. If all fail, go back to that old grid
 
     // In case all test fails and rotation will not occur 
-    let unrotatedBlock = deepCopy(blockInfo.currentPos);
+    let unrotatedBlockPos = deepCopy(blockInfo.currentPos);
     let oldRotationIndex = deepCopy(blockInfo.rotationIndex);
 
     updateRotationIndex(blockInfo);
@@ -80,16 +80,12 @@ function rotateBlock() {
 
     // Checks 1 px of block at a time and if occupied by grid already
     let failed = false;
-    // console.log(rotatedBlock);
-    // console.log(blockInfo.topLeftCoor);
-    // console.log(blockInfo.rotationIndex);
 
-    // THIS LOOP IS REUSED A LOT
+    // CONSIDER: THIS LOOP IS REUSED A LOT
     for (let row = 0; row < rotatedBlock.length; row++) {
         let blockY = blockInfo.topLeftCoor["y"] + row;
         for (let col = 0; col < rotatedBlock[row].length; col++) {
             let blockX = blockInfo.topLeftCoor["x"] + col;
-
             // Save all rotated block's coors first before possible kick test
             if (rotatedBlock[row][col] == 1) {
                 saveCoorToArr(rotatedBlockPos, blockX, blockY);
@@ -102,13 +98,8 @@ function rotateBlock() {
         for (let col = 0; col < rotatedBlock[row].length; col++) {
             let blockX = blockInfo.topLeftCoor["x"] + col;
 
-            // Save rotated block's coors for kick use
-            if (rotatedBlock[row][col] == 1) {
-                saveCoorToArr(rotatedBlockPos, blockX, blockY);
-            }
-
             // blockX + blockY can go out of bound b/c blocks use 4x4
-            // Prevents checking blockX + blockY if they are beyond wall
+            // Prevents checking blockX + blockY if they are beyond wall since can cause error
             if (blockY < gridInfo.rows &&  blockX < gridInfo.cols) {
                 // console.log(`gridInfo ${blockX}, ${blockY}`);
                 if (checkRotationCollision(gridInfo.grid[blockY][blockX], rotatedBlock[row][col]) == true) {
@@ -129,31 +120,28 @@ function rotateBlock() {
                     }
                     else {
                         console.log("no kicks work; don't allow rotation");
+
+                        // Reset to before rotation was done
                         blockInfo.rotationIndex = oldRotationIndex;
-                        blockInfo.currentPos = unrotatedBlock;
+                        blockInfo.currentPos = unrotatedBlockPos;
 
                         // Place block pos on grid, then update board
+                        finalizeRotation(blockInfo.currentType[blockInfo.rotationIndex]);
+                        updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
+                        placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
 
                         return false;
                     }
-
-
-                    // TEST USE (I think): reset rotationIndex, so we back to unrotated form if rotate obtacle
-                    // kicks will be implemented so this may not be needed in future
-                    blockInfo.rotationIndex = oldRotationIndex;
                 }
                 // else {
                 //     console.log("This particular px has no overlap with grid cell");
                 // }
             }
             // else {
-            //     console.log("BEYOND WALL");
-            //     console.log(`gridInfo ${blockX}, ${blockY}`);
+            //     console.log("BEYOND WALL: ${blockX}, ${blockY}");
             // }  
         }
     }
-    
-    // console.log(rotatedBlockPos);
 
     // Initial rotation is successful
     if (failed == false) {
@@ -167,37 +155,6 @@ function rotateBlock() {
     //     // If none works, reset piece back to unrotated piece
 }
 
-let testRotatedBlockPos = [
-    {x: 5, y: 1}, 
-    {x: 5, y: 2}, 
-    {x: 6, y: 2}, 
-    {x: 5, y: 3}
-];
-
-let testGrid = [
-    // 7 = preset obstacle
-    // 2 = block
-    // 9 = obstacle on board that overlap with rotated/shifted block
-    // 3 = where px shifted successfully
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-    [1, 1, 0, 0, 0, 1, 1, 0, 0, 0],
-    [1, 1, 0, 0, 0, 1, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
-];
-
-let testRotatedBlock = [
-    [0, 1, 0, 0],
-    [0, 1, 1, 0],
-    [0, 1, 0, 0],
-    [0, 0, 0, 0],
-];
-
-// testKicks(1, {"x": 4, "y": 1}, testRotatedBlockPos, testGrid, testRotatedBlock);
 
 function updateRotationIndex(blockInfo) {
     if (blockInfo.rotationIndex < blockInfo.currentType.length - 1) {
@@ -231,17 +188,7 @@ function finalizeRotation(rotatedBlock) {
             if (rotatedBlock[row][col] !== 0) { 
                 gridInfo.grid[blockY][blockX] = rotatedBlock[row][col];
                 saveCoorToArr(blockInfo.currentPos, blockX, blockY);
-            }
-
-            // try {
-            //     if (rotatedBlock[row][col] !== 0) { 
-            //         gridInfo.grid[blockY][blockX] = rotatedBlock[row][col];
-            //         saveCoorToArr(blockInfo.currentPos, blockX, blockY);
-            //     }
-            // } catch (error) {
-            //     console.log(`col, row: (${col}, ${row})`);
-            // }
-                
+            }   
         }   
     }
 }
@@ -319,93 +266,6 @@ function testKicks(index, topLeftCoor, pos, grid) {
 
     return false;
     // console.log(topLeftCoor);
-}
-
-function testKicksPrototype(index, topLeftCoor, pos, grid, rotatedBlock) {
-    console.log(grid);
-    let updatedTopLeftCoors = false;
-    for (let offset of clockwiseKickData()[index]) {
-        console.log(offset);
-
-        let failed = false;
-        // Shift the coors of rotatedBlockPos to test kicks
-        for (let coor of pos) {
-            let kickX = coor.x + offset[0]; 
-            let kickY = coor.y + offset[1];
-
-            if (updatedTopLeftCoors == false) {
-                topLeftCoor.x += offset[0];
-                topLeftCoor.y += offset[1];
-                updatedTopLeftCoors = true;
-            }
-
-            // This also ONLY checks 1 px at a time
-            // Now test if grid[kickY][kickX] is overlapping with anything
-            if (grid[kickY][kickX] == 7) {
-                grid[kickY][kickX] = 9;
-                failed = true;
-                // One fail = this offset fails, so go to next offset
-                break;
-            }
-            else {
-                grid[kickY][kickX] = 3;
-            }
-
-        //     // if (checkRotationCollision(pos, grid) == false) {
-        //     console.log(kickX, kickY);
-        //     if (checkRotationCollision(kickX, kickY, grid) == false) {
-        //         // If there is no overlap, this this kick is successful
-        //         console.log("no collision");
-        //         finalizeRotation(pos, grid);
-        //         break;
-        //     }
-
-        }
-        console.log(topLeftCoor);
-        blockInfo.topLeftCoor = topLeftCoor;
-        // false means the offset works, so this func is done
-        // Only finalize block pos on grid after loops are done
-        if (failed == false) {
-
-            // return true;
-
-            removeOldBlock(pos, grid);
-            console.log(grid);
-            finalizeRotation(rotatedBlock);
-            updateBoard(grid, gridInfo.rows, gridInfo.fillerRows);
-            placeGhost(blockInfo.ghostPos, pos, gridInfo.rows, gridInfo.cols);
-        }
-
-        // TEST USE to test 1st offset
-        break;
-        // displayTestShift(pos, grid);
-        // Check this particular shift for overlap
-        // if (checkRotationCollision(pos, grid) == false) {
-        //     // If there is no overlap, this this kick is successful
-        //     console.log("no collision");
-        //     finalizeRotation(pos, grid);
-        //     break;
-        // }
-        // break;
-    }
-    console.log(grid);
-}
-
-// Visually display the kicked block without altering grid itself
-function displayTestShift(pos, gridCopy) {
-    console.log(pos);
-    console.log(gridCopy);
-    for (let coor of pos) {
-        // console.log(coor.x, coor.y);
-        if (gridCopy[coor.y][coor.x] == 1) {
-            console.log("overlap");
-            gridCopy[coor.y][coor.x] = 9;
-        }
-        else {
-            console.log("no overlap");
-            gridCopy[coor.y][coor.x] = 2;
-        }
-    }
 }
 
 // SECTION: Board
@@ -496,9 +356,10 @@ function refillBag(bag) {
 
 // SECTION: Place block
 function placeBlockDefaultPos(blockInfo, gridInfo) {
-    // Reset blockPos & create block type
+    // Reset blockPos, create block type, & rotationIndex to 0
     blockInfo.currentPos = [];
     // blockInfo.block = getBlock(blockInfo.bag);
+    blockInfo.rotationIndex = 0;
 
     // TEST USE when implementing rotation collision
     blockInfo.block = blockInfo.currentType[blockInfo.rotationIndex];
