@@ -8,8 +8,8 @@ const gridInfo = {
     grid: [
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-        [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-        [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
         [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
         [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -39,7 +39,7 @@ const blockInfo = {
     topLeftCoor: {},
 
     // TEST USE for implementing rotation collision
-    currentType: blockTypes()["S"],
+    currentType: blockTypes()["J"],
 
     rotationIndex: 0,
     block: null,
@@ -102,7 +102,12 @@ function rotateBlock() {
             // Prevents checking blockX + blockY if they are beyond wall since can cause error
             if (blockY < gridInfo.rows &&  blockX < gridInfo.cols) {
                 // console.log(`gridInfo ${blockX}, ${blockY}`);
-                if (checkRotationCollision(gridInfo.grid[blockY][blockX], rotatedBlock[row][col]) == true) {
+
+                let beyondWall = checkBeyondWall(rotatedBlock, blockInfo.topLeftCoor);
+                // Check collision w/ BLOCK
+                let rotationCollision = checkRotationCollision(gridInfo.grid[blockY][blockX], rotatedBlock[row][col]);
+
+                if (beyondWall == true || rotationCollision == true) {
                     // UNDER CONSTRUCTION
                     // true means Intial rotation failed
                     console.log("----Initial rotation failed");
@@ -166,9 +171,25 @@ function updateRotationIndex(blockInfo) {
 }
 
 function checkRotationCollision(cell, rotatedBlockPx) {
+    // Check collision w/ BLOCK
     if (rotatedBlockPx == 1 && cell == 1) {
         return true;
     } 
+    return false;
+}
+
+function checkBeyondWall(rotatedBlock, topLeftCoor) {
+    for (let row = 0; row < rotatedBlock.length; row++) {
+        let blockY = topLeftCoor["y"] + row;
+        for (let col = 0; col < rotatedBlock[row].length; col++) {
+            let blockX = topLeftCoor["x"] + col;
+
+            if (blockY > gridInfo.rows || blockX > gridInfo.cols || blockX < 0) {
+                return true;
+            }
+        }   
+    }
+
     return false;
 }
 
@@ -179,6 +200,7 @@ function finalizeRotation(rotatedBlock) {
         let blockY = blockInfo.topLeftCoor["y"] + row;
         for (let col = 0; col < rotatedBlock[row].length; col++) {
             let blockX = blockInfo.topLeftCoor["x"] + col;
+            console.log(blockX, blockY);
 
             if (row == 0 && col == 0) {
                 blockInfo.topLeftCoor = {"x": blockX, "y": blockY};
@@ -214,7 +236,15 @@ function testKicks(index, topLeftCoor, pos, grid) {
             // }
 
             // REMEMBER this loop ONLY checks 1 px at a time
-            // Test if grid cell overlaps with new coor after kick
+            // Test if kickY goes beyond wall; rows - 1 to exclude invisible row from count
+
+            // CHECKPOINT
+            if (kickY > gridInfo.rows - 1) {
+                console.log(`BEYOND WALL - ${kickX}, ${kickY}`);
+                break;
+            }
+
+            // Test if grid cell overlaps with new coor after kick OR 
             if (grid[kickY][kickX] == 1) {
                 console.log(`OVERLAP - ${kickX}, ${kickY}`);
                 // A single fail = this offset fails; go to next offset
@@ -236,6 +266,7 @@ function testKicks(index, topLeftCoor, pos, grid) {
             //         console.log(`No overlap -> ${kickX}, ${kickY}`);
             //     }
             //   } catch (error) {
+            //     console.log("-----START HERE------")
             //     console.error(error);
             //     console.log(`Coors before shift -> ${coor.x}, ${coor.y}`);
             //     console.log(`Offset -> ${offset}`);
