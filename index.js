@@ -12,9 +12,9 @@ const gridInfo = {
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 0, 1, 1, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     ],
     // Test grid for T-spin
     // grid: [
@@ -38,9 +38,12 @@ const blockInfo = {
     // Used so grid always knows where to overwrite current block with rotated block
     topLeftCoor: {},
 
+    typeName: null,
+    currentType: null,
+
     // TEST USE for implementing rotation collision
-    typeName: "I",
-    currentType: blockTypes()["I"],
+    // typeName: "I",
+    // currentType: blockTypes()["I"],
 
     rotationIndex: 0,
     block: null,
@@ -107,6 +110,8 @@ function rotateBlock() {
                 let rotationCollision = checkRotationCollision(gridInfo.grid[blockY][blockX], rotatedBlock[row][col]);
 
                 if (beyondWall == true || rotationCollision == true) {
+                    console.log(`beyondWall: ${beyondWall}, rotationCollision: ${rotationCollision}`);
+                    console.log(deepCopy(gridInfo.grid));
                     // UNDER CONSTRUCTION
                     // true means Intial rotation failed
                     console.log("----Initial rotation failed----");
@@ -148,6 +153,7 @@ function rotateBlock() {
 
     // Initial rotation is successful
     if (failed == false) {
+        console.log("no beyond wall or rotation collision");
         finalizeRotation(rotatedBlock);
         updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
         placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
@@ -173,14 +179,27 @@ function checkRotationCollision(cell, rotatedBlockPx) {
 }
 
 function checkBeyondWall(rotatedBlock, topLeftCoor) {
+    console.log(rotatedBlock);
     for (let row = 0; row < rotatedBlock.length; row++) {
         let blockY = topLeftCoor["y"] + row;
         for (let col = 0; col < rotatedBlock[row].length; col++) {
             let blockX = topLeftCoor["x"] + col;
 
-            if (blockY > gridInfo.rows - 1 || blockX >= gridInfo.cols || blockX < 0) {
-                return true;
+            // TEST: Only check coor if px is 1
+            // No pt in checking if a non-block px is out of bound
+            if (rotatedBlock[row][col] == 1) {
+                console.log(`BEYOND WALL: ${blockX}, ${blockY}`);
+                if (blockY > gridInfo.rows - 1 || blockX >= gridInfo.cols || blockX < 0) {
+                    console.log(`----BEYOND WALL: X: ${blockX}, Col: ${gridInfo.cols}`);
+                    return true;
+                }
             }
+
+            // console.log(`BEYOND WALL: ${blockX}, ${blockY}`);
+            // if (blockY > gridInfo.rows - 1 || blockX >= gridInfo.cols || blockX < 0) {
+            //     console.log(`----BEYOND WALL: X: ${blockX}, Col: ${gridInfo.cols}`);
+            //     return true;
+            // }
         }   
     }
 
@@ -331,6 +350,12 @@ function addGridLabels() {
 function getBlock(bag) {
     let val = Math.floor(Math.random() * bag.length);
     let block = bag[val];
+
+    blockInfo.typeName = block;
+    blockInfo.currentType = blockTypes()[block];
+
+    // console.log(blockInfo.typeName);
+
     removeBlockFromBag(bag, block);
 
     if (bag.length == 0) {
@@ -355,11 +380,17 @@ function refillBag(bag) {
 function placeBlockDefaultPos(blockInfo, gridInfo) {
     // Reset blockPos, create block type, & rotationIndex to 0
     blockInfo.currentPos = [];
-    // blockInfo.block = getBlock(blockInfo.bag);
+    blockInfo.block = getBlock(blockInfo.bag);
     blockInfo.rotationIndex = 0;
 
+    console.log(gridInfo.grid);
+    console.log(blockInfo.block);
+    console.log(blockInfo.typeName);
+    console.log(blockInfo.currentType);
+
+
     // TEST USE when implementing rotation collision
-    blockInfo.block = blockInfo.currentType[blockInfo.rotationIndex];
+    // blockInfo.block = blockInfo.currentType[blockInfo.rotationIndex];
 
     let block = blockInfo.block;
     let defaultPos = blockInfo.defaultPos;
