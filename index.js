@@ -1,4 +1,4 @@
-import { blockTypes, clockwiseKickData, clockwiseIKickData} from "./blocks_n_kicks.js"
+import { blockTypes, clockwiseKickData} from "./blocks_n_kicks.js"
 import { createEleWithCls, deepCopy } from "./helpers.js"
 
 const gridInfo = {
@@ -21,7 +21,7 @@ const gridInfo = {
     //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     //     [0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
+    //     [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
     //     [0, 0, 0, 1, 0, 1, 1, 0, 0, 0],
     //     [0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
     //     [0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
@@ -31,7 +31,7 @@ const gridInfo = {
 }
 
 const blockInfo = {
-    defaultPos: {"x": 2, "y": 3},
+    defaultPos: {"x": 6, "y": 1},
     currentPos: [],
     ghostPos: [],
 
@@ -44,8 +44,6 @@ const blockInfo = {
 
     rotationIndex: 0,
     block: null,
-
-    kickData: clockwiseKickData(),
     
     // Will use 7-bag randomizer type
     bag: Object.keys(blockTypes())
@@ -105,21 +103,17 @@ function rotateBlock() {
                 // console.log(`gridInfo ${blockX}, ${blockY}`);
 
                 let beyondWall = checkBeyondWall(rotatedBlock, blockInfo.topLeftCoor);
-                if (blockInfo.typeName == "I") {
-                    console.log(`BEYOND WALL: ${beyondWall}`);
-                }
                 // Check collision w/ BLOCK
                 let rotationCollision = checkRotationCollision(gridInfo.grid[blockY][blockX], rotatedBlock[row][col]);
 
                 if (beyondWall == true || rotationCollision == true) {
                     // UNDER CONSTRUCTION
                     // true means Intial rotation failed
-                    console.log("----Initial rotation failed");
-                    console.log(`${blockX}, ${blockY}`);
+                    console.log("----Initial rotation failed----");
+                    console.log(`ISSUE: ${blockX}, ${blockY}`);
                     failed = true;
 
                     // Start kick test
-                    // testKicks(blockInfo.rotationIndex, blockInfo.topLeftCoor, rotatedBlockPos, gridInfo.grid, rotatedBlock);
                     let checkKicks = testKicks(blockInfo.rotationIndex, blockInfo.topLeftCoor, rotatedBlockPos, gridInfo.grid);
                     if (checkKicks == true) {
                         finalizeRotation(rotatedBlock);
@@ -158,10 +152,6 @@ function rotateBlock() {
         updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
         placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
     }
-
-    // // That rotated piece will be shifted based on kick data
-    //     // If any shifts work, put that piece there
-    //     // If none works, reset piece back to unrotated piece
 }
 
 
@@ -220,101 +210,59 @@ function finalizeRotation(rotatedBlock) {
 }
 
 function testKicks(index, topLeftCoor, pos, grid) {
-    console.table(grid);
-    // let updatedTopLeftCoors = false;
-
-    console.log(clockwiseKickData()[index]);
-    console.log(pos);
-
-    // console.log(blockInfo.typeName)
-
     let data = null;
     if (blockInfo.typeName == "I") {
-        console.log(1)
-        data = clockwiseIKickData();
+        console.log("I kick being used");
+        data = clockwiseKickData().clockwiseI;
     }
     else {
-        console.log(2)
-        data = clockwiseKickData();
+        console.log("STANDARD Kick being used");
+        data = clockwiseKickData().clockwiseStd;
     }
 
-    // for (let offset of clockwiseKickData()[index]) {
     for (let offset of data[index]) {
         console.log(`Offset being test: ${offset}`);
-        // let failed = false;
-        // Shift the coors of rotatedBlockPos to test kicks
+        // Shift coors of rotatedBlockPos to test kicks
         for (let [i, coor] of pos.entries()) {
             let kickX = coor.x + offset[0]; 
             let kickY = coor.y + offset[1];
 
-            // if (updatedTopLeftCoors == false) {
-            //     topLeftCoor.x += offset[0];
-            //     topLeftCoor.y += offset[1];
-            //     updatedTopLeftCoors = true;
-            // }
-
-            // REMEMBER this loop ONLY checks 1 px at a time
-            // Test if kickY goes beyond wall; rows - 1 to exclude invisible row from count
-
-            // CHECKPOINT
+            // REMEMBER: this loop ONLY checks 1 px at a time
+            // Test if kicks go beyond walls; rows - 1 to exclude invisible row from count
             if (kickY > gridInfo.rows - 1|| kickX >= gridInfo.cols || kickX < 0) {
                 console.log(`BEYOND WALL - ${kickX}, ${kickY}`);
                 break;
             }
 
-            // Test if grid cell overlaps with new coor after kick OR 
+            // Test if new grid cell after kick overlaps with new coor
             if (grid[kickY][kickX] == 1) {
                 console.log(`OVERLAP - ${kickX}, ${kickY}`);
-                // A single fail = this offset fails; go to next offset
-                // failed = true;
+                // A single fail = this entire offset fails; go to next offset
                 break;
             }
             // else {
             //     console.log(`No overlap -> ${kickX}, ${kickY}`);
             // }
 
-            // try {
-            //     if (grid[kickY][kickX] == 1) {
-            //         console.log(`OVERLAP - ${kickX}, ${kickY}`);
-            //         // A single fail = this offset fails; go to next offset
-            //         // failed = true;
-            //         break;
-            //     }
-            //     else {
-            //         console.log(`No overlap -> ${kickX}, ${kickY}`);
-            //     }
-            //   } catch (error) {
-            //     console.log("-----START HERE------")
-            //     console.error(error);
-            //     console.log(`Coors before shift -> ${coor.x}, ${coor.y}`);
-            //     console.log(`Offset -> ${offset}`);
-            //     console.log(`ERROR -> ${kickX}, ${kickY}`);
-            //     console.log("-----STOP HERE------")
-            //   }
-              
-
             // If no overlaps at all after looping all coor of pos
             if (i == pos.length - 1) {
-                console.log(`Index ${index - 1} --> ${index}`);
+                // TEST: Treat -1 as 3
+                console.log(`Index ${index - 1} --> ${index}`)
                 console.log(`${offset} works; kick success`);
-                // if (updatedTopLeftCoors == false) {
 
-                    // Only update this topLeftCoor once a kick is found to work
-                    // B/c that's when we actually need to put it on grid + board
-                    topLeftCoor.x += offset[0];
-                    topLeftCoor.y += offset[1];
-                    // updatedTopLeftCoors = true;
-                // }
+                // Only update this topLeftCoor once a kick works
+                // b/c that's when we actually need to put it on grid + board
+                topLeftCoor.x += offset[0];
+                topLeftCoor.y += offset[1];
+
                 return true;
             }
         }
-        // TEST USE - checking 1 kick first
-        // break;
+
         console.log("-----");
     }
 
     return false;
-    // console.log(topLeftCoor);
 }
 
 // SECTION: Board
@@ -367,7 +315,7 @@ function createBoard(board, grid, rows, fillerRows) {
     addGridLabels();
 }
 
-// // TEST USE
+// TEST USE
 function addGridLabels() {
     let board = document.querySelector(".board");
     for (let row = 0; row < board.children.length; row++) {
