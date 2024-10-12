@@ -1,4 +1,4 @@
-import { blockTypes, clockwiseKickData} from "./blocks_n_kicks.js"
+import { blockTypes, clockwiseKickData, clockwiseIKickData} from "./blocks_n_kicks.js"
 import { createEleWithCls, deepCopy } from "./helpers.js"
 
 const gridInfo = {
@@ -7,14 +7,14 @@ const gridInfo = {
     fillerRows: 1,
     grid: [
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
         [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-        [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-        [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+        [0, 0, 1, 1, 1, 0, 0, 0, 0, 0],
     ],
     // Test grid for T-spin
     // grid: [
@@ -31,7 +31,7 @@ const gridInfo = {
 }
 
 const blockInfo = {
-    defaultPos: {"x": 6, "y": 1},
+    defaultPos: {"x": 2, "y": 3},
     currentPos: [],
     ghostPos: [],
 
@@ -39,7 +39,8 @@ const blockInfo = {
     topLeftCoor: {},
 
     // TEST USE for implementing rotation collision
-    currentType: blockTypes()["J"],
+    typeName: "I",
+    currentType: blockTypes()["I"],
 
     rotationIndex: 0,
     block: null,
@@ -104,6 +105,9 @@ function rotateBlock() {
                 // console.log(`gridInfo ${blockX}, ${blockY}`);
 
                 let beyondWall = checkBeyondWall(rotatedBlock, blockInfo.topLeftCoor);
+                if (blockInfo.typeName == "I") {
+                    console.log(`BEYOND WALL: ${beyondWall}`);
+                }
                 // Check collision w/ BLOCK
                 let rotationCollision = checkRotationCollision(gridInfo.grid[blockY][blockX], rotatedBlock[row][col]);
 
@@ -184,7 +188,7 @@ function checkBeyondWall(rotatedBlock, topLeftCoor) {
         for (let col = 0; col < rotatedBlock[row].length; col++) {
             let blockX = topLeftCoor["x"] + col;
 
-            if (blockY > gridInfo.rows || blockX > gridInfo.cols || blockX < 0) {
+            if (blockY > gridInfo.rows - 1 || blockX >= gridInfo.cols || blockX < 0) {
                 return true;
             }
         }   
@@ -200,7 +204,7 @@ function finalizeRotation(rotatedBlock) {
         let blockY = blockInfo.topLeftCoor["y"] + row;
         for (let col = 0; col < rotatedBlock[row].length; col++) {
             let blockX = blockInfo.topLeftCoor["x"] + col;
-            console.log(blockX, blockY);
+            // console.log(blockX, blockY);
 
             if (row == 0 && col == 0) {
                 blockInfo.topLeftCoor = {"x": blockX, "y": blockY};
@@ -221,7 +225,21 @@ function testKicks(index, topLeftCoor, pos, grid) {
 
     console.log(clockwiseKickData()[index]);
     console.log(pos);
-    for (let offset of clockwiseKickData()[index]) {
+
+    // console.log(blockInfo.typeName)
+
+    let data = null;
+    if (blockInfo.typeName == "I") {
+        console.log(1)
+        data = clockwiseIKickData();
+    }
+    else {
+        console.log(2)
+        data = clockwiseKickData();
+    }
+
+    // for (let offset of clockwiseKickData()[index]) {
+    for (let offset of data[index]) {
         console.log(`Offset being test: ${offset}`);
         // let failed = false;
         // Shift the coors of rotatedBlockPos to test kicks
@@ -239,7 +257,7 @@ function testKicks(index, topLeftCoor, pos, grid) {
             // Test if kickY goes beyond wall; rows - 1 to exclude invisible row from count
 
             // CHECKPOINT
-            if (kickY > gridInfo.rows - 1) {
+            if (kickY > gridInfo.rows - 1|| kickX >= gridInfo.cols || kickX < 0) {
                 console.log(`BEYOND WALL - ${kickX}, ${kickY}`);
                 break;
             }
@@ -251,9 +269,9 @@ function testKicks(index, topLeftCoor, pos, grid) {
                 // failed = true;
                 break;
             }
-            else {
-                console.log(`No overlap -> ${kickX}, ${kickY}`);
-            }
+            // else {
+            //     console.log(`No overlap -> ${kickX}, ${kickY}`);
+            // }
 
             // try {
             //     if (grid[kickY][kickX] == 1) {
