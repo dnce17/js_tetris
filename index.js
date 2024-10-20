@@ -2,6 +2,8 @@ import { blockTypes, clockwiseKickData} from "./blocks_n_kicks.js"
 import { createEleWithCls, deepCopy } from "./helpers.js"
 
 const gridInfo = {
+    // rows: 15,
+    // cols: 10,
     rows: 9,
     cols: 10,
     fillerRows: 1,
@@ -16,6 +18,7 @@ const gridInfo = {
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     ],
+    // grid: [],
     // Test grid for T-spin
     // grid: [
     //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -28,10 +31,13 @@ const gridInfo = {
     //     [0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
     //     [0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
     // ],
+
+    dropInterval: 1000,  
+    lastAutoDropTime: Date.now(),  // Track the time of the last drop
 }
 
 const blockInfo = {
-    defaultPos: {"x": 6, "y": 1},
+    defaultPos: {"x": 3, "y": 1},
     currentPos: [],
     ghostPos: [],
 
@@ -58,6 +64,26 @@ const keyState = {
     "ArrowRight": null,
     " ": null
 };
+
+// SECTION: Grid (dynamically made)
+function createGrid(grid, totalRows, totalCols) {
+    for (let row = 0; row < totalRows; row++) {
+        let rowArr = [];
+        for (let col = 0; col < totalCols; col++) {
+            rowArr.push(0);
+
+            // TEST USE --> insert random obstacles
+            // let coin = Math.random() < 0.80 ? 'Heads' : 'Tails';
+            // if (coin == "Heads") {
+            //     rowArr.push(0);
+            // }
+            // else {
+            //     rowArr.push(1);
+            // }
+        }
+        grid.push(rowArr);
+    }
+}
 
 // CHECKPOINT: Rotation Collision
 // SECTION: Rotation Collision
@@ -179,7 +205,7 @@ function checkRotationCollision(cell, rotatedBlockPx) {
 }
 
 function checkBeyondWall(rotatedBlock, topLeftCoor) {
-    console.log(rotatedBlock);
+    // console.log(rotatedBlock);
     for (let row = 0; row < rotatedBlock.length; row++) {
         let blockY = topLeftCoor["y"] + row;
         for (let col = 0; col < rotatedBlock[row].length; col++) {
@@ -188,7 +214,7 @@ function checkBeyondWall(rotatedBlock, topLeftCoor) {
             // TEST: Only check coor if px is 1
             // No pt in checking if a non-block px is out of bound
             if (rotatedBlock[row][col] == 1) {
-                console.log(`BEYOND WALL: ${blockX}, ${blockY}`);
+                // console.log(`BEYOND WALL: ${blockX}, ${blockY}`);
                 if (blockY > gridInfo.rows - 1 || blockX >= gridInfo.cols || blockX < 0) {
                     console.log(`----BEYOND WALL: X: ${blockX}, Col: ${gridInfo.cols}`);
                     return true;
@@ -663,11 +689,31 @@ function enableCtrls() {
     window.addEventListener("keydown", function(e) {
         if (e.key == " ") {
             placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
+            gridInfo.lastAutoDropTime = Date.now();
         }
 
         // TEST: rotateBlock will ultimately use Up key
-        if (e.key == "r") {
+        // if (e.key == "r") {
+        //     rotateBlock();
+        // }
+
+        if (e.key == "ArrowUp") {
             rotateBlock();
+
+            if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, "down") == true) {
+                console.log("timer reset b/c bottom obstacle");
+                if (counter < 30) {
+                    console.log(`Counter: ${counter}`);
+                    counter += 1;
+                    gridInfo.lastAutoDropTime = Date.now();
+                }
+                else {
+                    console.log("Counter reset");
+                    counter = 0;
+                    placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
+                    gridInfo.lastAutoDropTime = Date.now();
+                }
+            }
         }
 
         if (keys.includes(e.key)) {
@@ -682,37 +728,110 @@ function enableCtrls() {
     })
 }
 
+// UNDER TESTING
+let counter = 0
 function gameLoop() {
-    let direction = null;
+    const now = Date.now();
+    
+    // Get user input direction, can be "down", "left", "right", or null
+    let direction = getDirection();
+
+    // Handle auto-drop if enough time has passed
+    if (now - gridInfo.lastAutoDropTime >= gridInfo.dropInterval) {
+        direction = "down"; // Force auto-drop down if enough time has passed
+        
+        // Check if the block collides after auto-drop
+        let collision = checkCollision(deepCopy(blockInfo.currentPos), gridInfo.rows, gridInfo.cols, gridInfo.grid, direction);
+        if (collision) {
+            placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
+            gridInfo.lastAutoDropTime = now;  // Reset drop timer after auto drop
+            setTimeout(gameLoop, 35);
+            // requestAnimationFrame(gameLoop);
+            return;
+        } 
+        else {
+            gridInfo.lastAutoDropTime = now;  // Reset timer after moving down automatically
+        }
+    }
+
+    // Handle manual movement
+    if (direction != null) {
+        if (direction === "down") {
+            // Manual down movement
+            let collision = checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, direction);
+            if (collision == false) {
+                // Move the block down
+                removeOldBlock(blockInfo.currentPos, gridInfo.grid);
+                updatePieceCoors(blockInfo.currentPos, blockInfo.topLeftCoor, gridInfo.grid, direction);
+                updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
+                placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
+                gridInfo.lastAutoDropTime = now;  // Reset the auto-drop timer after manual drop
+            } 
+            // else {
+            //     // Place block if there's a collision; WILL REMOVE as not part of modern Tetris
+            //     placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
+            //     gridInfo.lastAutoDropTime = now;
+            //     setTimeout(gameLoop, 30);
+            //     return;
+            // }
+        } 
+        else {
+            // Handle left/right movement
+            if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, direction) == false) {
+                removeOldBlock(blockInfo.currentPos, gridInfo.grid);
+                updatePieceCoors(blockInfo.currentPos, blockInfo.topLeftCoor, gridInfo.grid, direction);
+                updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
+                placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
+            }
+
+            // Reset the timer if the block is touching BOTTOM wall or block BELOW it
+            // TODO: Add a counter to avoid abuse of mechanic
+            if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, "down") == true) {
+                console.log("timer reset b/c bottom obstacle");
+                // counter += 1;
+                // console.log(counter);
+                // gridInfo.lastAutoDropTime = now;
+
+                if (counter < 30) {
+                    counter += 1;
+                    gridInfo.lastAutoDropTime = now;
+                }
+                else {
+                    console.log("Counter reset");
+                    placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
+                    counter = 0;
+                    gridInfo.lastAutoDropTime = now;
+                }
+            }
+        }
+    }
+
+    setTimeout(gameLoop, 35);
+    // requestAnimationFrame(gameLoop);
+}
+
+
+function getDirection() {
     if (keyState["ArrowDown"] == true) {
-        direction = "down";
+        return "down";
     }    
     if (keyState["ArrowLeft"] == true) {
-        direction = "left";
+        return "left";
     }
     if (keyState["ArrowRight"] == true) {
-        direction = "right";
+        return "right";
     }
 
     // TEST USE ONLY
-    if (keyState["ArrowUp"] == true) {
-        direction = "up";
-    }
+    // if (keyState["ArrowUp"] == true) {
+    //     return "up";
+    // }
 
-    // NOTE: if you want diagonal movement, put this in each if statement
-    if (direction != null && checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, direction) == false) {
-        removeOldBlock(blockInfo.currentPos, gridInfo.grid);
-        updatePieceCoors(blockInfo.currentPos, blockInfo.topLeftCoor, gridInfo.grid, direction);
-        updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
-
-        placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
-    }
-
-
-    setTimeout(gameLoop, 30);
-} 
+    return null;
+}
 
 function executeGame() {
+    // createGrid(gridInfo.grid, gridInfo.rows, gridInfo.cols);
     placeBlockDefaultPos(blockInfo, gridInfo);
     enableCtrls();
     gameLoop();

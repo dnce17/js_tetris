@@ -10,3 +10,9 @@
 * checkBeyondWall() + testKicks()
     * No point in checking if the non-block px is out of bound for blockY and blockY (recall that a block structure is 4x4, which includes empty spaces)
     * kickX and kickY in testKicks() doesn't require a check for non-block px b/c the parameter passes in just the rotatedBlockPos themselves, so there is no empty space to account for
+* checkWallCollision
+    * Note that this is also used with placing the ghost piece too
+
+
+CHECKPOINT
+* the block auto place will last more than a second if user moves left and right or rotate when below the current block is a set block or wall
