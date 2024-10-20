@@ -15,4 +15,15 @@
 
 
 CHECKPOINT
-* the block auto place will last more than a second if user moves left and right or rotate when below the current block is a set block or wall
+* cleaning up the code for resetting last drop time and counter
+* TO POSSIBLY CONSIDER or could be important in future:
+    * resetting the counter when the user rotates into an area that no longer has obstacle below
+        * need to further account for timer abuse if do this
+
+NOTES
+
+-- These 3 items are basically one thing; placeBlock should always be accompanied by the other two
+-- Might consider embedding the last 2 codes in placeBlock
+placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
+gridInfo.lastAutoDropTime = Date.now();
+gridInfo.counter = 0;

@@ -34,6 +34,7 @@ const gridInfo = {
 
     dropInterval: 1000,  
     lastAutoDropTime: Date.now(),  // Track the time of the last drop
+    counter: 0
 }
 
 const blockInfo = {
@@ -85,20 +86,15 @@ function createGrid(grid, totalRows, totalCols) {
     }
 }
 
-// CHECKPOINT: Rotation Collision
 // SECTION: Rotation Collision
 function rotateBlock() {
-    // Save the unrotated piece; if all test fails, block will go back to that
-    // ALTERNATIVE (in later code), make a dup grid to test the rotations on. If all fail, go back to that old grid
-
-    // In case all test fails and rotation will not occur 
+    // Save in case all kicks fail; block will revert back
     let unrotatedBlockPos = deepCopy(blockInfo.currentPos);
     let oldRotationIndex = deepCopy(blockInfo.rotationIndex);
 
     updateRotationIndex(blockInfo);
     let rotatedBlock = blockInfo.currentType[blockInfo.rotationIndex];
     let rotatedBlockPos = [];
-    // let rotatedBlock = getRotatedBlock(blockInfo.currentType, blockInfo.rotationIndex);
 
     // Remove current block from grid (board unaffected) for testing
     removeOldBlock(blockInfo.currentPos, gridInfo.grid);
@@ -126,8 +122,8 @@ function rotateBlock() {
         for (let col = 0; col < rotatedBlock[row].length; col++) {
             let blockX = blockInfo.topLeftCoor["x"] + col;
 
-            // blockX + blockY can go out of bound b/c blocks use 4x4
-            // Prevents checking blockX + blockY if they are beyond wall since can cause error
+            // ISSUE: blockX + blockY can go out of bound b/c blocks use 4x4
+            // SOLUTION below: Prevents checking blockX + blockY if they are beyond wall since can cause error
             if (blockY < gridInfo.rows &&  blockX < gridInfo.cols) {
                 // console.log(`gridInfo ${blockX}, ${blockY}`);
 
@@ -138,8 +134,6 @@ function rotateBlock() {
                 if (beyondWall == true || rotationCollision == true) {
                     console.log(`beyondWall: ${beyondWall}, rotationCollision: ${rotationCollision}`);
                     console.log(deepCopy(gridInfo.grid));
-                    // UNDER CONSTRUCTION
-                    // true means Intial rotation failed
                     console.log("----Initial rotation failed----");
                     console.log(`ISSUE: ${blockX}, ${blockY}`);
                     failed = true;
@@ -561,7 +555,6 @@ function checkCollision(pos, rows, cols, grid, direction) {
     return false;
 }
 
-// CHECKPOINT!!!
 function checkWallCollision(pos, rows, cols, direction) {
     for (let coor of pos) {
         if (direction == "down" && coor.y + 1 >= rows) {
@@ -690,6 +683,7 @@ function enableCtrls() {
         if (e.key == " ") {
             placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
             gridInfo.lastAutoDropTime = Date.now();
+            gridInfo.counter = 0;
         }
 
         // TEST: rotateBlock will ultimately use Up key
@@ -702,17 +696,20 @@ function enableCtrls() {
 
             if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, "down") == true) {
                 console.log("timer reset b/c bottom obstacle");
-                if (counter < 30) {
-                    console.log(`Counter: ${counter}`);
-                    counter += 1;
-                    gridInfo.lastAutoDropTime = Date.now();
+                if (gridInfo.counter < 30) {
+                    console.log(`Counter: ${gridInfo.counter}`);
+
+                    gridInfo.counter += 1;
                 }
                 else {
                     console.log("Counter reset");
-                    counter = 0;
+
                     placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
                     gridInfo.lastAutoDropTime = Date.now();
+                    gridInfo.counter = 0;
                 }
+
+                gridInfo.lastAutoDropTime = Date.now();
             }
         }
 
@@ -729,7 +726,6 @@ function enableCtrls() {
 }
 
 // UNDER TESTING
-let counter = 0
 function gameLoop() {
     const now = Date.now();
     
@@ -745,8 +741,9 @@ function gameLoop() {
         if (collision) {
             placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
             gridInfo.lastAutoDropTime = now;  // Reset drop timer after auto drop
+            gridInfo.counter = 0;
+
             setTimeout(gameLoop, 35);
-            // requestAnimationFrame(gameLoop);
             return;
         } 
         else {
@@ -767,13 +764,6 @@ function gameLoop() {
                 placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
                 gridInfo.lastAutoDropTime = now;  // Reset the auto-drop timer after manual drop
             } 
-            // else {
-            //     // Place block if there's a collision; WILL REMOVE as not part of modern Tetris
-            //     placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
-            //     gridInfo.lastAutoDropTime = now;
-            //     setTimeout(gameLoop, 30);
-            //     return;
-            // }
         } 
         else {
             // Handle left/right movement
@@ -784,30 +774,28 @@ function gameLoop() {
                 placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
             }
 
-            // Reset the timer if the block is touching BOTTOM wall or block BELOW it
-            // TODO: Add a counter to avoid abuse of mechanic
+            // Reset timer if block is touching obstacle below it; Counter avoids timer
+            // NOTE: This "down" direction if statement is added here instead of the direction == "down" if statement b/c 
+            // the point is for the block to MOVE LEFT/RIGHT to allow more than 1 sec (aka when counter reaches 30) 
+            // before auto placing, assuming there's an obstacle below it
             if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, "down") == true) {
                 console.log("timer reset b/c bottom obstacle");
-                // counter += 1;
-                // console.log(counter);
-                // gridInfo.lastAutoDropTime = now;
-
-                if (counter < 30) {
-                    counter += 1;
-                    gridInfo.lastAutoDropTime = now;
+                if (gridInfo.counter < 30) {
+                    gridInfo.counter += 1;
                 }
                 else {
                     console.log("Counter reset");
+
                     placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
-                    counter = 0;
-                    gridInfo.lastAutoDropTime = now;
+                    gridInfo.counter = 0;
                 }
+
+                gridInfo.lastAutoDropTime = now;
             }
         }
     }
 
     setTimeout(gameLoop, 35);
-    // requestAnimationFrame(gameLoop);
 }
 
 
@@ -835,10 +823,6 @@ function executeGame() {
     placeBlockDefaultPos(blockInfo, gridInfo);
     enableCtrls();
     gameLoop();
-
-    // TEST
-    // rotateBlock();
-
 }
 
 executeGame();
