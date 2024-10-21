@@ -2,23 +2,23 @@ import { blockTypes, clockwiseKickData} from "./blocks_n_kicks.js"
 import { createEleWithCls, deepCopy } from "./helpers.js"
 
 const gridInfo = {
-    // rows: 15,
-    // cols: 10,
-    rows: 9,
+    rows: 15,
     cols: 10,
+    // rows: 9,
+    // cols: 10,
     fillerRows: 1,
-    grid: [
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    ],
-    // grid: [],
+    // grid: [
+    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    // ],
+    grid: [],
     // Test grid for T-spin
     // grid: [
     //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -32,9 +32,15 @@ const gridInfo = {
     //     [0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
     // ],
 
+    // Block State Properties
     dropInterval: 1000,  
     lastAutoDropTime: Date.now(),  // Track the time of the last drop
-    counter: 0
+    counter: 0, // Allows > 1 second to finalize block placement if obstacle is below and user moves left/right; max: 30
+    maxCounter: 30,
+
+    // Movement Delay
+    lastMoveTime: Date.now(),
+    delay: 100
 }
 
 const blockInfo = {
@@ -696,7 +702,7 @@ function enableCtrls() {
 
             if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, "down") == true) {
                 console.log("timer reset b/c bottom obstacle");
-                if (gridInfo.counter < 30) {
+                if (gridInfo.counter < gridInfo.maxCounter) {
                     console.log(`Counter: ${gridInfo.counter}`);
 
                     gridInfo.counter += 1;
@@ -743,7 +749,8 @@ function gameLoop() {
             gridInfo.lastAutoDropTime = now;  // Reset drop timer after auto drop
             gridInfo.counter = 0;
 
-            setTimeout(gameLoop, 35);
+            setTimeout(gameLoop, 42);
+            // requestAnimationFrame(gameLoop);
             return;
         } 
         else {
@@ -766,36 +773,71 @@ function gameLoop() {
             } 
         } 
         else {
-            // Handle left/right movement
-            if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, direction) == false) {
-                removeOldBlock(blockInfo.currentPos, gridInfo.grid);
-                updatePieceCoors(blockInfo.currentPos, blockInfo.topLeftCoor, gridInfo.grid, direction);
-                updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
-                placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
-            }
+            const now = Date.now();
 
-            // Reset timer if block is touching obstacle below it; Counter avoids timer
-            // NOTE: This "down" direction if statement is added here instead of the direction == "down" if statement b/c 
-            // the point is for the block to MOVE LEFT/RIGHT to allow more than 1 sec (aka when counter reaches 30) 
-            // before auto placing, assuming there's an obstacle below it
-            if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, "down") == true) {
-                console.log("timer reset b/c bottom obstacle");
-                if (gridInfo.counter < 30) {
-                    gridInfo.counter += 1;
-                }
-                else {
-                    console.log("Counter reset");
-
-                    placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
-                    gridInfo.counter = 0;
+            if (now - gridInfo.lastMoveTime > 42) {
+                console.log("X ms has passed; allow move");
+                // Handle left/right movement
+                if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, direction) == false) {
+                    removeOldBlock(blockInfo.currentPos, gridInfo.grid);
+                    updatePieceCoors(blockInfo.currentPos, blockInfo.topLeftCoor, gridInfo.grid, direction);
+                    updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
+                    placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
                 }
 
-                gridInfo.lastAutoDropTime = now;
+                // Reset timer if block is touching obstacle below it; Counter avoids timer
+                // NOTE: This "down" direction if statement is added here instead of the direction == "down" if statement b/c 
+                // the point is for the block to MOVE LEFT/RIGHT to allow more than 1 sec (aka when counter reaches 30) 
+                // before auto placing, assuming there's an obstacle below it
+                if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, "down") == true) {
+                    console.log("timer reset b/c bottom obstacle");
+                    if (gridInfo.counter < gridInfo.maxCounter) {
+                        gridInfo.counter += 1;
+                    }
+                    else {
+                        console.log("Counter reset");
+
+                        placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
+                        gridInfo.counter = 0;
+                    }
+
+                    gridInfo.lastAutoDropTime = now;
+                }
             }
+
+            gridInfo.lastMoveTime = now;
+
+            // // Handle left/right movement
+            // if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, direction) == false) {
+            //     removeOldBlock(blockInfo.currentPos, gridInfo.grid);
+            //     updatePieceCoors(blockInfo.currentPos, blockInfo.topLeftCoor, gridInfo.grid, direction);
+            //     updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
+            //     placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
+            // }
+
+            // // Reset timer if block is touching obstacle below it; Counter avoids timer
+            // // NOTE: This "down" direction if statement is added here instead of the direction == "down" if statement b/c 
+            // // the point is for the block to MOVE LEFT/RIGHT to allow more than 1 sec (aka when counter reaches 30) 
+            // // before auto placing, assuming there's an obstacle below it
+            // if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, "down") == true) {
+            //     console.log("timer reset b/c bottom obstacle");
+            //     if (gridInfo.counter < gridInfo.maxCounter) {
+            //         gridInfo.counter += 1;
+            //     }
+            //     else {
+            //         console.log("Counter reset");
+
+            //         placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
+            //         gridInfo.counter = 0;
+            //     }
+
+            //     gridInfo.lastAutoDropTime = now;
+            // }
         }
     }
 
-    setTimeout(gameLoop, 35);
+    setTimeout(gameLoop, 42);
+    // requestAnimationFrame(gameLoop);
 }
 
 
@@ -819,7 +861,7 @@ function getDirection() {
 }
 
 function executeGame() {
-    // createGrid(gridInfo.grid, gridInfo.rows, gridInfo.cols);
+    createGrid(gridInfo.grid, gridInfo.rows, gridInfo.cols);
     placeBlockDefaultPos(blockInfo, gridInfo);
     enableCtrls();
     gameLoop();
