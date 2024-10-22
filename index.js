@@ -4,33 +4,8 @@ import { createEleWithCls, deepCopy } from "./helpers.js"
 const gridInfo = {
     rows: 15,
     cols: 10,
-    // rows: 9,
-    // cols: 10,
     fillerRows: 1,
-    // grid: [
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    // ],
     grid: [],
-    // Test grid for T-spin
-    // grid: [
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 1, 0, 1, 1, 0, 0, 0],
-    //     [0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
-    //     [0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
-    //     [0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
-    //     [0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
-    // ],
 
     // Block State Properties
     dropInterval: 1000,  
@@ -53,11 +28,6 @@ const blockInfo = {
 
     typeName: null,
     currentType: null,
-
-    // TEST USE for implementing rotation collision
-    // typeName: "I",
-    // currentType: blockTypes()["I"],
-
     rotationIndex: 0,
     block: null,
     
@@ -78,15 +48,6 @@ function createGrid(grid, totalRows, totalCols) {
         let rowArr = [];
         for (let col = 0; col < totalCols; col++) {
             rowArr.push(0);
-
-            // TEST USE --> insert random obstacles
-            // let coin = Math.random() < 0.80 ? 'Heads' : 'Tails';
-            // if (coin == "Heads") {
-            //     rowArr.push(0);
-            // }
-            // else {
-            //     rowArr.push(1);
-            // }
         }
         grid.push(rowArr);
     }
@@ -131,17 +92,11 @@ function rotateBlock() {
             // ISSUE: blockX + blockY can go out of bound b/c blocks use 4x4
             // SOLUTION below: Prevents checking blockX + blockY if they are beyond wall since can cause error
             if (blockY < gridInfo.rows &&  blockX < gridInfo.cols) {
-                // console.log(`gridInfo ${blockX}, ${blockY}`);
-
                 let beyondWall = checkBeyondWall(rotatedBlock, blockInfo.topLeftCoor);
                 // Check collision w/ BLOCK
                 let rotationCollision = checkRotationCollision(gridInfo.grid[blockY][blockX], rotatedBlock[row][col]);
 
                 if (beyondWall == true || rotationCollision == true) {
-                    console.log(`beyondWall: ${beyondWall}, rotationCollision: ${rotationCollision}`);
-                    console.log(deepCopy(gridInfo.grid));
-                    console.log("----Initial rotation failed----");
-                    console.log(`ISSUE: ${blockX}, ${blockY}`);
                     failed = true;
 
                     // Start kick test
@@ -153,8 +108,6 @@ function rotateBlock() {
                         return true;
                     }
                     else {
-                        console.log("no kicks work; don't allow rotation");
-
                         // Reset to before rotation was done
                         blockInfo.rotationIndex = oldRotationIndex;
                         blockInfo.currentPos = unrotatedBlockPos;
@@ -167,19 +120,12 @@ function rotateBlock() {
                         return false;
                     }
                 }
-                // else {
-                //     console.log("This particular px has no overlap with grid cell");
-                // }
             }
-            // else {
-            //     console.log("BEYOND WALL: ${blockX}, ${blockY}");
-            // }  
         }
     }
 
     // Initial rotation is successful
     if (failed == false) {
-        console.log("no beyond wall or rotation collision");
         finalizeRotation(rotatedBlock);
         updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
         placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
@@ -205,27 +151,17 @@ function checkRotationCollision(cell, rotatedBlockPx) {
 }
 
 function checkBeyondWall(rotatedBlock, topLeftCoor) {
-    // console.log(rotatedBlock);
     for (let row = 0; row < rotatedBlock.length; row++) {
         let blockY = topLeftCoor["y"] + row;
         for (let col = 0; col < rotatedBlock[row].length; col++) {
             let blockX = topLeftCoor["x"] + col;
 
-            // TEST: Only check coor if px is 1
-            // No pt in checking if a non-block px is out of bound
             if (rotatedBlock[row][col] != 0) {
-                // console.log(`BEYOND WALL: ${blockX}, ${blockY}`);
+                // No pt in checking if a non-block px is out of bound
                 if (blockY > gridInfo.rows - 1 || blockX >= gridInfo.cols || blockX < 0) {
-                    console.log(`----BEYOND WALL: X: ${blockX}, Col: ${gridInfo.cols}`);
                     return true;
                 }
             }
-
-            // console.log(`BEYOND WALL: ${blockX}, ${blockY}`);
-            // if (blockY > gridInfo.rows - 1 || blockX >= gridInfo.cols || blockX < 0) {
-            //     console.log(`----BEYOND WALL: X: ${blockX}, Col: ${gridInfo.cols}`);
-            //     return true;
-            // }
         }   
     }
 
@@ -239,7 +175,6 @@ function finalizeRotation(rotatedBlock) {
         let blockY = blockInfo.topLeftCoor["y"] + row;
         for (let col = 0; col < rotatedBlock[row].length; col++) {
             let blockX = blockInfo.topLeftCoor["x"] + col;
-            // console.log(blockX, blockY);
 
             if (row == 0 && col == 0) {
                 blockInfo.topLeftCoor = {"x": blockX, "y": blockY};
@@ -257,45 +192,32 @@ function finalizeRotation(rotatedBlock) {
 function testKicks(index, topLeftCoor, pos, grid) {
     let data = null;
     if (blockInfo.typeName == "I") {
-        console.log("I kick being used");
         data = clockwiseKickData().clockwiseI;
     }
     else {
-        console.log("STANDARD Kick being used");
         data = clockwiseKickData().clockwiseStd;
     }
 
     for (let offset of data[index]) {
-        console.log(`Offset being test: ${offset}`);
         // Shift coors of rotatedBlockPos to test kicks
         for (let [i, coor] of pos.entries()) {
             let kickX = coor.x + offset[0]; 
             let kickY = coor.y + offset[1];
 
-            // REMEMBER: this loop ONLY checks 1 px at a time
+            // REMEMBER: This loop ONLY checks 1 px at a time
             // Test if kicks go beyond walls; rows - 1 to exclude invisible row from count
             if (kickY > gridInfo.rows - 1|| kickX >= gridInfo.cols || kickX < 0) {
-                console.log(`BEYOND WALL - ${kickX}, ${kickY}`);
                 break;
             }
 
             // Test if new grid cell after kick overlaps with new coor
             if (grid[kickY][kickX] != 0) {
-                console.log(`OVERLAP - ${kickX}, ${kickY}`);
-                // A single fail = this entire offset fails; go to next offset
-                break;
+                break;  // A single fail = this entire offset fails; go to next offset
             }
-            // else {
-            //     console.log(`No overlap -> ${kickX}, ${kickY}`);
-            // }
 
-            // If no overlaps at all after looping all coor of pos
+            // Goes here if no overlaps at all after looping all coor of pos
             if (i == pos.length - 1) {
-                // TEST: Treat -1 as 3
-                console.log(`Index ${index - 1} --> ${index}`)
-                console.log(`${offset} works; kick success`);
-
-                // Only update this topLeftCoor once a kick works
+                // Only update topLeftCoor once one kick works
                 // b/c that's when we actually need to put it on grid + board
                 topLeftCoor.x += offset[0];
                 topLeftCoor.y += offset[1];
@@ -303,8 +225,6 @@ function testKicks(index, topLeftCoor, pos, grid) {
                 return true;
             }
         }
-
-        console.log("-----");
     }
 
     return false;
@@ -379,9 +299,6 @@ function getBlock(bag) {
 
     blockInfo.typeName = block;
     blockInfo.currentType = blockTypes()[block];
-
-    // console.log(blockInfo.typeName);
-
     removeBlockFromBag(bag, block);
 
     if (bag.length == 0) {
@@ -408,15 +325,6 @@ function placeBlockDefaultPos(blockInfo, gridInfo) {
     blockInfo.currentPos = [];
     blockInfo.block = getBlock(blockInfo.bag);
     blockInfo.rotationIndex = 0;
-
-    // console.log(gridInfo.grid);
-    // console.log(blockInfo.block);
-    // console.log(blockInfo.typeName);
-    // console.log(blockInfo.currentType);
-
-
-    // TEST USE when implementing rotation collision
-    // blockInfo.block = blockInfo.currentType[blockInfo.rotationIndex];
 
     let block = blockInfo.block;
     let defaultPos = blockInfo.defaultPos;
@@ -595,17 +503,14 @@ function checkBlockCollision(pos, grid, direction) {
 
     for (let coor of outermostCoors) {
         if (direction == "right" && grid[coor.y][coor.x + 1] != 0) {
-            // console.log("right collision");
             return true;
         }
 
         if (direction == "left" && grid[coor.y][coor.x - 1] != 0) {
-            // console.log("left collision");
             return true;
         }
 
         if (direction == "down" && grid[coor.y + 1][coor.x] != 0) {
-            // console.log("down collision");
             return true;
         }
     }
@@ -693,24 +598,14 @@ function enableCtrls() {
             gridInfo.counter = 0;
         }
 
-        // TEST: rotateBlock will ultimately use Up key
-        // if (e.key == "r") {
-        //     rotateBlock();
-        // }
-
         if (e.key == "ArrowUp") {
             rotateBlock();
 
             if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, "down") == true) {
-                console.log("timer reset b/c bottom obstacle");
                 if (gridInfo.counter < gridInfo.maxCounter) {
-                    console.log(`Counter: ${gridInfo.counter}`);
-
                     gridInfo.counter += 1;
                 }
                 else {
-                    console.log("Counter reset");
-
                     placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
                     gridInfo.lastAutoDropTime = Date.now();
                     gridInfo.counter = 0;
@@ -776,7 +671,6 @@ function gameLoop() {
             const now = Date.now();
 
             if (now - gridInfo.lastMoveTime > 42) {
-                console.log("X ms has passed; allow move");
                 // Handle left/right movement
                 if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, direction) == false) {
                     removeOldBlock(blockInfo.currentPos, gridInfo.grid);
@@ -790,13 +684,10 @@ function gameLoop() {
                 // the point is for the block to MOVE LEFT/RIGHT to allow more than 1 sec (aka when counter reaches 30) 
                 // before auto placing, assuming there's an obstacle below it
                 if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, "down") == true) {
-                    console.log("timer reset b/c bottom obstacle");
                     if (gridInfo.counter < gridInfo.maxCounter) {
                         gridInfo.counter += 1;
                     }
                     else {
-                        console.log("Counter reset");
-
                         placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
                         gridInfo.counter = 0;
                     }
@@ -823,11 +714,6 @@ function getDirection() {
     if (keyState["ArrowRight"] == true) {
         return "right";
     }
-
-    // TEST USE ONLY
-    // if (keyState["ArrowUp"] == true) {
-    //     return "up";
-    // }
 
     return null;
 }
