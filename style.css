@@ -23,7 +23,9 @@ body {
 }
 
 .ghost {
-    background-color: rgba(0, 0, 0, 0.5);
+    /* background-color: rgba(0, 0, 0, 0.5); */
+    opacity: 0.3;
+    /* BUG: ghost is in front of block when overlap */
 }
 
 .px {
@@ -67,6 +69,15 @@ body {
 .row:last-child .cell {
     border-bottom: 1px solid black;
 }
+
+/* Tetrimino Colors */
+.T { background-color: purple; }
+.Z { background-color: red; }
+.S { background-color: green; }
+.L { background-color: orange; }
+.J { background-color: pink; }
+.O { background-color: yellow; }
+.I { background-color: aqua; }
 
 /* TEST USE */
 .test-direction {
