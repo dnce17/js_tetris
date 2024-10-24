@@ -54,29 +54,31 @@ function createGrid(grid, totalRows, totalCols) {
 }
 
 // SECTION: Rotation Collision
-function rotateBlock() {
-    // Save in case all kicks fail; block will revert back
-    let unrotatedBlockPos = deepCopy(blockInfo.currentPos);
-    let oldRotationIndex = deepCopy(blockInfo.rotationIndex);
+function rotateBlock(blockInfo, gridInfo) {
+    let b = blockInfo, g = gridInfo;
 
-    updateRotationIndex(blockInfo);
-    let rotatedBlock = blockInfo.currentType[blockInfo.rotationIndex];
+    // Save in case all kicks fail; block will revert back
+    let unrotatedBlockPos = deepCopy(b.currentPos);
+    let oldRotationIndex = deepCopy(b.rotationIndex);
+
+    updateRotationIndex(b);
+    let rotatedBlock = b.currentType[b.rotationIndex];
     let rotatedBlockPos = [];
 
     // Remove current block from grid (board unaffected) for testing
-    removeOldBlock(blockInfo.currentPos, gridInfo.grid);
+    removeOldBlock(b.currentPos, g.grid);
 
     // NOT NEEDED, but helps with testing visually
-    updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
+    updateBoard(g.grid, g.rows, g.fillerRows);
 
     // Checks 1 px of block at a time and if occupied by grid already
     let failed = false;
 
     // CONSIDER: THIS LOOP IS REUSED A LOT
     for (let row = 0; row < rotatedBlock.length; row++) {
-        let blockY = blockInfo.topLeftCoor["y"] + row;
+        let blockY = b.topLeftCoor["y"] + row;
         for (let col = 0; col < rotatedBlock[row].length; col++) {
-            let blockX = blockInfo.topLeftCoor["x"] + col;
+            let blockX = b.topLeftCoor["x"] + col;
             // Save all rotated block's coors first before possible kick test
             if (rotatedBlock[row][col] != 0) {
                 saveCoorToArr(rotatedBlockPos, blockX, blockY);
@@ -85,37 +87,37 @@ function rotateBlock() {
     }
 
     for (let row = 0; row < rotatedBlock.length; row++) {
-        let blockY = blockInfo.topLeftCoor["y"] + row;
+        let blockY = b.topLeftCoor["y"] + row;
         for (let col = 0; col < rotatedBlock[row].length; col++) {
-            let blockX = blockInfo.topLeftCoor["x"] + col;
+            let blockX = b.topLeftCoor["x"] + col;
 
             // ISSUE: blockX + blockY can go out of bound b/c blocks use 4x4
             // SOLUTION below: Prevents checking blockX + blockY if they are beyond wall since can cause error
-            if (blockY < gridInfo.rows &&  blockX < gridInfo.cols) {
-                let beyondWall = checkBeyondWall(rotatedBlock, blockInfo.topLeftCoor);
+            if (blockY < g.rows &&  blockX < g.cols) {
+                let beyondWall = checkBeyondWall(rotatedBlock, b.topLeftCoor, g.rows, g.cols);
                 // Check collision w/ BLOCK
-                let rotationCollision = checkRotationCollision(gridInfo.grid[blockY][blockX], rotatedBlock[row][col]);
+                let rotationCollision = checkRotationCollision(g.grid[blockY][blockX], rotatedBlock[row][col]);
 
                 if (beyondWall == true || rotationCollision == true) {
                     failed = true;
 
                     // Start kick test
-                    let checkKicks = testKicks(blockInfo.rotationIndex, blockInfo.topLeftCoor, rotatedBlockPos, gridInfo.grid);
+                    let checkKicks = testKicks(rotatedBlockPos, b, g);
                     if (checkKicks == true) {
-                        finalizeRotation(rotatedBlock);
-                        updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
-                        placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
+                        finalizeRotation(b, g, rotatedBlock);
+                        updateBoard(g.grid, g.rows, g.fillerRows);
+                        placeGhost(b, g, "down");
                         return true;
                     }
                     else {
                         // Reset to before rotation was done
-                        blockInfo.rotationIndex = oldRotationIndex;
-                        blockInfo.currentPos = unrotatedBlockPos;
+                        b.rotationIndex = oldRotationIndex;
+                        b.currentPos = unrotatedBlockPos;
 
                         // Place block pos on grid, then update board
-                        finalizeRotation(blockInfo.currentType[blockInfo.rotationIndex]);
-                        updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
-                        placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
+                        finalizeRotation(b, g, b.currentType[b.rotationIndex]);
+                        updateBoard(g.grid, g.rows, g.fillerRows);
+                        placeGhost(b, g, "down");
 
                         return false;
                     }
@@ -126,19 +128,20 @@ function rotateBlock() {
 
     // Initial rotation is successful
     if (failed == false) {
-        finalizeRotation(rotatedBlock);
-        updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
-        placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
+        finalizeRotation(b, g, rotatedBlock);
+        updateBoard(g.grid, g.rows, g.fillerRows);
+        placeGhost(b, g, "down");
     }
 }
 
 
 function updateRotationIndex(blockInfo) {
-    if (blockInfo.rotationIndex < blockInfo.currentType.length - 1) {
-        blockInfo.rotationIndex += 1;
+    let b = blockInfo;
+    if (b.rotationIndex < b.currentType.length - 1) {
+        b.rotationIndex += 1;
     }
     else {
-        blockInfo.rotationIndex = 0;
+        b.rotationIndex = 0;
     }
 }
 
@@ -150,7 +153,7 @@ function checkRotationCollision(cell, rotatedBlockPx) {
     return false;
 }
 
-function checkBeyondWall(rotatedBlock, topLeftCoor) {
+function checkBeyondWall(rotatedBlock, topLeftCoor, totalRows, totalCols) {
     for (let row = 0; row < rotatedBlock.length; row++) {
         let blockY = topLeftCoor["y"] + row;
         for (let col = 0; col < rotatedBlock[row].length; col++) {
@@ -158,7 +161,7 @@ function checkBeyondWall(rotatedBlock, topLeftCoor) {
 
             if (rotatedBlock[row][col] != 0) {
                 // No pt in checking if a non-block px is out of bound
-                if (blockY > gridInfo.rows - 1 || blockX >= gridInfo.cols || blockX < 0) {
+                if (blockY > totalRows - 1 || blockX >= totalCols || blockX < 0) {
                     return true;
                 }
             }
@@ -168,37 +171,40 @@ function checkBeyondWall(rotatedBlock, topLeftCoor) {
     return false;
 }
 
-function finalizeRotation(rotatedBlock) {
-    blockInfo.currentPos = [];
+function finalizeRotation(blockInfo, gridInfo, rotatedBlock) {
+    let b = blockInfo, g = gridInfo;
+    b.currentPos = [];
 
     for (let row = 0; row < rotatedBlock.length; row++) {
-        let blockY = blockInfo.topLeftCoor["y"] + row;
+        let blockY = b.topLeftCoor["y"] + row;
         for (let col = 0; col < rotatedBlock[row].length; col++) {
-            let blockX = blockInfo.topLeftCoor["x"] + col;
+            let blockX = b.topLeftCoor["x"] + col;
 
             if (row == 0 && col == 0) {
-                blockInfo.topLeftCoor = {"x": blockX, "y": blockY};
+                b.topLeftCoor = {"x": blockX, "y": blockY};
             }
 
             // Only place non-zero values
             if (rotatedBlock[row][col] !== 0) { 
-                gridInfo.grid[blockY][blockX] = blockInfo.typeName;
-                saveCoorToArr(blockInfo.currentPos, blockX, blockY);
+                g.grid[blockY][blockX] = b.typeName;
+                saveCoorToArr(b.currentPos, blockX, blockY);
             }   
         }   
     }
 }
 
-function testKicks(index, topLeftCoor, pos, grid) {
+function testKicks(pos, blockInfo, gridInfo) {
+    let b = blockInfo, g = gridInfo;
     let data = null;
-    if (blockInfo.typeName == "I") {
+
+    if (b.typeName == "I") {
         data = clockwiseKickData().clockwiseI;
     }
     else {
         data = clockwiseKickData().clockwiseStd;
     }
 
-    for (let offset of data[index]) {
+    for (let offset of data[b.rotationIndex]) {
         // Shift coors of rotatedBlockPos to test kicks
         for (let [i, coor] of pos.entries()) {
             let kickX = coor.x + offset[0]; 
@@ -206,12 +212,12 @@ function testKicks(index, topLeftCoor, pos, grid) {
 
             // REMEMBER: This loop ONLY checks 1 px at a time
             // Test if kicks go beyond walls; rows - 1 to exclude invisible row from count
-            if (kickY > gridInfo.rows - 1|| kickX >= gridInfo.cols || kickX < 0) {
+            if (kickY > g.rows - 1|| kickX >= g.cols || kickX < 0) {
                 break;
             }
 
             // Test if new grid cell after kick overlaps with new coor
-            if (grid[kickY][kickX] != 0) {
+            if (g.grid[kickY][kickX] != 0) {
                 break;  // A single fail = this entire offset fails; go to next offset
             }
 
@@ -219,8 +225,8 @@ function testKicks(index, topLeftCoor, pos, grid) {
             if (i == pos.length - 1) {
                 // Only update topLeftCoor once one kick works
                 // b/c that's when we actually need to put it on grid + board
-                topLeftCoor.x += offset[0];
-                topLeftCoor.y += offset[1];
+                b.topLeftCoor.x += offset[0];
+                b.topLeftCoor.y += offset[1];
 
                 return true;
             }
@@ -293,16 +299,18 @@ function addGridLabels() {
 }
 
 // SECTION: Random block generator
-function getBlock(bag) {
-    let val = Math.floor(Math.random() * bag.length);
-    let block = bag[val];
+function getBlock(blockInfo) {
+    let b = blockInfo;
 
-    blockInfo.typeName = block;
-    blockInfo.currentType = blockTypes()[block];
-    removeBlockFromBag(bag, block);
+    let val = Math.floor(Math.random() * b.bag.length);
+    let block = b.bag[val];
 
-    if (bag.length == 0) {
-        refillBag(bag);
+    b.typeName = block;
+    b.currentType = blockTypes()[block];
+    removeBlockFromBag(b.bag, block);
+
+    if (b.bag.length == 0) {
+        refillBag(b.bag);
     }
 
     return blockTypes()[block][0];
@@ -321,13 +329,15 @@ function refillBag(bag) {
 
 // SECTION: Place block
 function placeBlockDefaultPos(blockInfo, gridInfo) {
+    let b = blockInfo, g = gridInfo;
+    
     // Reset blockPos, create block type, & rotationIndex to 0
-    blockInfo.currentPos = [];
-    blockInfo.block = getBlock(blockInfo.bag);
-    blockInfo.rotationIndex = 0;
+    b.currentPos = [];
+    b.block = getBlock(blockInfo);
+    b.rotationIndex = 0;
 
-    let block = blockInfo.block;
-    let defaultPos = blockInfo.defaultPos;
+    let block = b.block;
+    let defaultPos = b.defaultPos;
 
     for (let row = 0; row < block.length; row++) {
         let blockY = defaultPos["y"] + row;
@@ -336,32 +346,32 @@ function placeBlockDefaultPos(blockInfo, gridInfo) {
 
             // Save the top-left coor for rotation purposes
             if (row == 0 && col == 0) {
-                blockInfo.topLeftCoor = {"x": blockX, "y": blockY};
+                b.topLeftCoor = {"x": blockX, "y": blockY};
             }
 
             // Only place non-zero values
             if (block[row][col] !== 0) { 
-                gridInfo.grid[blockY][blockX] = blockInfo.typeName;
-                saveCoorToArr(blockInfo.currentPos, blockX, blockY);
+                g.grid[blockY][blockX] = b.typeName;
+                saveCoorToArr(b.currentPos, blockX, blockY);
             }
         }
     }
 
-    updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
-    placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
+    updateBoard(g.grid, g.rows, g.fillerRows);
+    placeGhost(b, g, "down");
 }
 
 function saveCoorToArr(arr, x, y) {
     arr.push({"x": x, "y": y});
 }
 
-function placeBlock(ghostPos, blockPos, grid) {
+function placeBlock(ghostPos, blockPos, typeName, grid) {
     // Remove block being controlled
     removeOldBlock(blockPos, grid);
 
     // Place block based on ghostPos
     for (let coor of ghostPos) {
-        grid[coor.y][coor.x] = blockInfo.typeName;
+        grid[coor.y][coor.x] = typeName;
     }
 
     // New block appears
@@ -377,9 +387,9 @@ function removeOldBlock(blockPos, grid) {
     }
 }
 
-// // REUSED more than once
-function updatePieceCoors(pos, topLeftCoor, grid, direction, ghost=false) {
-    let updatedTopLeftCoors = false;    // Tracks top left coor for rotation use
+// REUSED more than once
+function updatePieceCoors(pos, typeName, topLeftCoor, grid, direction, ghost=false) {
+    let updatedTopLeftCoors = false;
 
     for (let coor of pos) {
         updateCoor(coor, direction);
@@ -387,12 +397,12 @@ function updatePieceCoors(pos, topLeftCoor, grid, direction, ghost=false) {
         // FUTURE: Maybe this should be its own function in future
         // Ghost is only reflected on DOM, not grid
         if (ghost == false) {
-            grid[coor.y][coor.x] = blockInfo.typeName;
+            grid[coor.y][coor.x] = typeName;
 
-            // Should only activate once or else each loop's coor will add to topLeftCoor
+            // topLeftCoor should only update once (or else EACH loop's coor will add to topLeftCoor = bad)
             if (updatedTopLeftCoors == false) {
                 updateCoor(topLeftCoor, direction);
-                updatedTopLeftCoors = true;
+                updatedTopLeftCoors = true;     
             }
         }
     }
@@ -410,33 +420,33 @@ function updateCoor(coor, direction) {
     if (direction == "right") {
         coor.x += 1;
     }
-
-    // TEST USE ONLY
-    if (direction == "up") {
-        coor.y -= 1;
-    }
 }
 
 // SECTION: Ghost
 // NOTE 1: Any changes to ghost position is solely changed in DOM and not grid b/c it's just visual aid
 // NOTE 2: placeGhost is based on blockPos and uses board DOM, 
 // so it should always be placed after funcs that alter blockPos and board DOM
-function placeGhost(ghostPos, blockPos, rows, cols) {
-    // Reset ghostPos; NOTE: I did not do ghostPos = [] b/c original would not be affected
-    ghostPos.length = 0;
-    deepCopy(blockPos).forEach(coor => ghostPos.push(coor));
-    let direction = "down";
+function placeGhost(blockInfo, gridInfo, direction) {
+    let b = blockInfo, g = gridInfo;
 
-    calculateGhostPos(ghostPos, rows, cols, direction);
-    displayGhost(ghostPos);
+    // Reset ghostPos; NOTE: I did not do ghostPos = [] b/c original would not be affected
+    b.ghostPos = [];
+    console.log(b.currentPos);
+    deepCopy(b.currentPos).forEach(coor => b.ghostPos.push(coor));
+    // let direction = "down";
+
+    calculateGhostPos(b, g, direction);
+    displayGhost(b.ghostPos, b.typeName);
 }
 
-function calculateGhostPos(ghostPos, rows, cols, direction) {
+function calculateGhostPos(blockInfo, gridInfo, direction) {
+    let b = blockInfo, g = gridInfo;
+
     // Loop until ghost hits wall or block
     while(true) {
-        if (checkCollision(ghostPos, rows, cols, gridInfo.grid, direction) == false) {
+        if (checkCollision(b.ghostPos, g.rows, g.cols, g.grid, direction) == false) {
             // Adds 1 to all y coors b/c safe (aka no obstacle), then checks (new y coor + 1) to see if obstacle
-            updatePieceCoors(ghostPos, blockInfo.topLeftCoor, gridInfo.grid, direction, true);
+            updatePieceCoors(b.ghostPos, b.typeName, b.topLeftCoor, g.grid, direction, true);
         }
         else {
             break;
@@ -444,13 +454,12 @@ function calculateGhostPos(ghostPos, rows, cols, direction) {
     }
 }
 
-function displayGhost(ghostPos) {
+function displayGhost(ghostPos, typeName) {
     // Match the ghostPos with DOM cells
     let board = document.querySelector(".board");
     for (let coor of ghostPos) {
-        // row = children[coor.y], col = children[coor.x]
         let cell = board.children[coor.y].children[coor.x];
-        cell.classList.add("ghost", blockInfo.typeName);
+        cell.classList.add("ghost", typeName);
     }
 }
 
@@ -480,11 +489,6 @@ function checkWallCollision(pos, rows, cols, direction) {
         }
 
         if (direction == "right" && coor.x + 1 >= cols) {
-            return true;
-        }
-
-        // TEST USE ONLY
-        if (direction == "up" && coor.y - 1 < 0) {
             return true;
         }
     }
@@ -528,13 +532,11 @@ function getOutermostCoors(pos, axis, direction) {
     let groupedAxis;
     let outermostCoors = [];
     if (axis == "x" && (direction == "right" || direction == "left")) {
-        // Group all y coors
         groupedAxis = groupByAxis("y", pos);
         outermostCoors = processOutermostCoors("y", groupedAxis, direction);
     }
 
     if (axis == "y" && direction == "down") {
-        // Group all x coors
         groupedAxis = groupByAxis("x", pos);
         outermostCoors = processOutermostCoors("x", groupedAxis, direction);
     }
@@ -543,6 +545,7 @@ function getOutermostCoors(pos, axis, direction) {
 }
 
 function groupByAxis(axis, pos) {
+    // Groups all x or y coors from pos dicts
     return pos.reduce((acc, coorObj) => {
         let coorVal = coorObj[axis];
         if (!acc[coorVal]) {
@@ -588,30 +591,31 @@ function clearLine(gridInfo) {
 }
 
 // // SECTION: Moving block
-function enableCtrls() {
+function enableCtrls(blockInfo, gridInfo, keyState) {
+    let b = blockInfo, g = gridInfo;
     let keys = ["ArrowDown", "ArrowLeft", "ArrowRight", " ", "ArrowUp"];
 
     window.addEventListener("keydown", function(e) {
         if (e.key == " ") {
-            placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
-            gridInfo.lastAutoDropTime = Date.now();
-            gridInfo.counter = 0;
+            placeBlock(b.ghostPos, b.currentPos, b.typeName, g.grid);
+            g.lastAutoDropTime = Date.now();
+            g.counter = 0;
         }
 
         if (e.key == "ArrowUp") {
-            rotateBlock();
+            rotateBlock(blockInfo, gridInfo);
 
-            if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, "down") == true) {
-                if (gridInfo.counter < gridInfo.maxCounter) {
-                    gridInfo.counter += 1;
+            if (checkCollision(b.currentPos, g.rows, g.cols, g.grid, "down") == true) {
+                if (g.counter < g.maxCounter) {
+                    g.counter += 1;
                 }
                 else {
-                    placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
-                    gridInfo.lastAutoDropTime = Date.now();
-                    gridInfo.counter = 0;
+                    placeBlock(b.ghostPos, b.currentPos, b.typeName, g.grid);
+                    g.lastAutoDropTime = Date.now();
+                    g.counter = 0;
                 }
 
-                gridInfo.lastAutoDropTime = Date.now();
+                g.lastAutoDropTime = Date.now();
             }
         }
 
@@ -627,29 +631,29 @@ function enableCtrls() {
     })
 }
 
-// UNDER TESTING
-function gameLoop() {
-    const now = Date.now();
+function gameLoop(blockInfo, gridInfo, keyState) {
+    let b = blockInfo, g = gridInfo;
+    let now = Date.now();
     
     // Get user input direction, can be "down", "left", "right", or null
-    let direction = getDirection();
+    let direction = getDirection(keyState);
 
     // Handle auto-drop if enough time has passed
-    if (now - gridInfo.lastAutoDropTime >= gridInfo.dropInterval) {
+    if (now - g.lastAutoDropTime >= g.dropInterval) {
         direction = "down"; // Force auto-drop down if enough time has passed
         
         // Check if the block collides after auto-drop
-        let collision = checkCollision(deepCopy(blockInfo.currentPos), gridInfo.rows, gridInfo.cols, gridInfo.grid, direction);
+        let collision = checkCollision(deepCopy(b.currentPos), g.rows, g.cols, g.grid, direction);
         if (collision) {
-            placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
-            gridInfo.lastAutoDropTime = now;  // Reset drop timer after auto drop
-            gridInfo.counter = 0;
+            placeBlock(b.ghostPos, b.currentPos, b.typeName, g.grid);
+            g.lastAutoDropTime = now;  // Reset drop timer after auto drop
+            g.counter = 0;
 
-            setTimeout(gameLoop, 42);
+            setTimeout(gameLoop, 42, b, g, keyState);
             return;
         } 
         else {
-            gridInfo.lastAutoDropTime = now;  // Reset timer after moving down automatically
+            g.lastAutoDropTime = now;  // Reset timer after moving down automatically
         }
     }
 
@@ -657,54 +661,55 @@ function gameLoop() {
     if (direction != null) {
         if (direction === "down") {
             // Manual down movement
-            let collision = checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, direction);
+            let collision = checkCollision(b.currentPos, g.rows, g.cols, g.grid, direction);
             if (collision == false) {
                 // Move the block down
-                removeOldBlock(blockInfo.currentPos, gridInfo.grid);
-                updatePieceCoors(blockInfo.currentPos, blockInfo.topLeftCoor, gridInfo.grid, direction);
-                updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
-                placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
-                gridInfo.lastAutoDropTime = now;  // Reset the auto-drop timer after manual drop
+                removeOldBlock(b.currentPos, g.grid);
+                updatePieceCoors(b.currentPos, b.typeName, b.topLeftCoor, g.grid, direction);
+                updateBoard(g.grid, g.rows, g.fillerRows);
+                placeGhost(b, g, "down");
+                g.lastAutoDropTime = now;  // Reset the auto-drop timer after manual drop
             } 
         } 
         else {
-            const now = Date.now();
+            now = Date.now();
 
-            if (now - gridInfo.lastMoveTime > 42) {
+            if (now - g.lastMoveTime > 42) {
                 // Handle left/right movement
-                if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, direction) == false) {
-                    removeOldBlock(blockInfo.currentPos, gridInfo.grid);
-                    updatePieceCoors(blockInfo.currentPos, blockInfo.topLeftCoor, gridInfo.grid, direction);
-                    updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
-                    placeGhost(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.rows, gridInfo.cols);
+                if (checkCollision(b.currentPos, g.rows, g.cols, g.grid, direction) == false) {
+                    removeOldBlock(b.currentPos, g.grid);
+                    updatePieceCoors(b.currentPos, b.typeName, b.topLeftCoor, g.grid, direction);
+                    updateBoard(g.grid, g.rows, g.fillerRows);
+                    placeGhost(b, g, "down");
                 }
 
                 // Reset timer if block is touching obstacle below it; Counter avoids timer
                 // NOTE: This "down" direction if statement is added here instead of the direction == "down" if statement b/c 
                 // the point is for the block to MOVE LEFT/RIGHT to allow more than 1 sec (aka when counter reaches 30) 
                 // before auto placing, assuming there's an obstacle below it
-                if (checkCollision(blockInfo.currentPos, gridInfo.rows, gridInfo.cols, gridInfo.grid, "down") == true) {
-                    if (gridInfo.counter < gridInfo.maxCounter) {
-                        gridInfo.counter += 1;
+                if (checkCollision(b.currentPos, g.rows, g.cols, g.grid, "down") == true) {
+                    if (g.counter < g.maxCounter) {
+                        g.counter += 1;
+                        console.log(g.counter);
                     }
                     else {
-                        placeBlock(blockInfo.ghostPos, blockInfo.currentPos, gridInfo.grid);
-                        gridInfo.counter = 0;
+                        placeBlock(b.ghostPos, b.currentPos, b.typeName, g.grid);
+                        g.counter = 0;
                     }
 
-                    gridInfo.lastAutoDropTime = now;
+                    g.lastAutoDropTime = now;
                 }
             }
 
-            gridInfo.lastMoveTime = now;
+            g.lastMoveTime = now;
         }
     }
 
-    setTimeout(gameLoop, 42);
+    setTimeout(gameLoop, 42, b, g, keyState);
 }
 
 
-function getDirection() {
+function getDirection(keyState) {
     if (keyState["ArrowDown"] == true) {
         return "down";
     }    
@@ -718,11 +723,13 @@ function getDirection() {
     return null;
 }
 
-function executeGame() {
-    createGrid(gridInfo.grid, gridInfo.rows, gridInfo.cols);
-    placeBlockDefaultPos(blockInfo, gridInfo);
-    enableCtrls();
-    gameLoop();
+function executeGame(blockInfo, gridInfo, keyState) {
+    let b = blockInfo, g = gridInfo;
+
+    createGrid(g.grid, g.rows, g.cols);
+    placeBlockDefaultPos(b, g);
+    enableCtrls(b, g, keyState);
+    gameLoop(blockInfo, gridInfo, keyState);
 }
 
-executeGame();
+executeGame(blockInfo, gridInfo, keyState);
