@@ -13,7 +13,7 @@ const gridInfo = {
     counter: 0, // Allows > 1 second to finalize block placement if obstacle is below and user moves left/right; max: 30
     maxCounter: 30,
 
-    // Movement Delay
+    // Movement delay to avoid too quick block movement
     lastMoveTime: Date.now(),
     delay: 100
 }
@@ -195,14 +195,7 @@ function finalizeRotation(blockInfo, gridInfo, rotatedBlock) {
 
 function testKicks(pos, blockInfo, gridInfo) {
     let b = blockInfo, g = gridInfo;
-    let data = null;
-
-    if (b.typeName == "I") {
-        data = clockwiseKickData().clockwiseI;
-    }
-    else {
-        data = clockwiseKickData().clockwiseStd;
-    }
+    let data = getClockWiseKickData(b.typeName);
 
     for (let offset of data[b.rotationIndex]) {
         // Shift coors of rotatedBlockPos to test kicks
@@ -210,18 +203,12 @@ function testKicks(pos, blockInfo, gridInfo) {
             let kickX = coor.x + offset[0]; 
             let kickY = coor.y + offset[1];
 
-            // REMEMBER: This loop ONLY checks 1 px at a time
-            // Test if kicks go beyond walls; rows - 1 to exclude invisible row from count
-            if (kickY > g.rows - 1|| kickX >= g.cols || kickX < 0) {
+            // REMEMBER: This loop ONLY checks 1 PX at a time
+            if (checkKickValidity(kickX, kickY, g.rows, g.cols, g.grid) == true) {
                 break;
             }
 
-            // Test if new grid cell after kick overlaps with new coor
-            if (g.grid[kickY][kickX] != 0) {
-                break;  // A single fail = this entire offset fails; go to next offset
-            }
-
-            // Goes here if no overlaps at all after looping all coor of pos
+            // Goes here if at last loop --> no overlaps at all after looping all coor of pos
             if (i == pos.length - 1) {
                 // Only update topLeftCoor once one kick works
                 // b/c that's when we actually need to put it on grid + board
@@ -231,6 +218,24 @@ function testKicks(pos, blockInfo, gridInfo) {
                 return true;
             }
         }
+    }
+
+    return false;
+}
+
+function getClockWiseKickData(typeName) {
+    return typeName == "I" ? clockwiseKickData().clockwiseI : clockwiseKickData().clockwiseStd;
+}
+
+function checkKickValidity(kickX, kickY, totalRow, totalCols, grid) {
+    // Test if kicked block go beyond walls; rows - 1 to exclude invisible top row from count
+    if (kickY > totalRow - 1|| kickX >= totalCols || kickX < 0) {
+        return true;
+    }
+
+    // Test if kicked block overlaps with set blocks' coor
+    if (grid[kickY][kickX] != 0) {
+        return true;  // A single fail = this entire offset fails; go to next offset
     }
 
     return false;
@@ -254,29 +259,14 @@ function removeOldBoard(board) {
     }
 }
 
-function createBoard(board, grid, rows, fillerRows) {
+function createBoard(board, grid, totalRows, totalFillerRows) {
     // Create board cell + px 
-    let cell;
-    for (let row = 0; row < rows; row++) {
-        let rowDiv;
-
-        // Create filler row
-        if (row < fillerRows) {
-            rowDiv = createEleWithCls("div", ["row", "hidden"]);
-        } 
-        else {
-            rowDiv = createEleWithCls("div", ["row"]);
-        }
+    for (let row = 0; row < totalRows; row++) {
+        let rowDiv = createRowsEle(row, totalFillerRows);
 
         for (let col of grid[row]) {
-            if (col == 0) {
-                cell = createEleWithCls("div", ["cell"]);
-            }
-            else {
-                cell = createEleWithCls("div", ["cell", "px", col]);
-            }
-
-            rowDiv.appendChild(cell);
+            let newCol = createColsEle(col);
+            rowDiv.appendChild(newCol);
         }
 
         board.appendChild(rowDiv);
@@ -284,6 +274,25 @@ function createBoard(board, grid, rows, fillerRows) {
 
     // TEST USE
     addGridLabels();
+}
+
+function createRowsEle(currentRowIndex, totalFillerRows) {
+    // Create filler row
+    if (currentRowIndex < totalFillerRows) {
+        return createEleWithCls("div", ["row", "hidden"]);
+    } 
+    else {
+        return createEleWithCls("div", ["row"]);
+    }
+}
+
+function createColsEle(colIndex) {
+    if (colIndex == 0) {
+        return createEleWithCls("div", ["cell"]);
+    }
+    else {
+        return createEleWithCls("div", ["cell", "px", colIndex]);
+    }
 }
 
 // TEST USE
@@ -336,13 +345,10 @@ function placeBlockDefaultPos(blockInfo, gridInfo) {
     b.block = getBlock(blockInfo);
     b.rotationIndex = 0;
 
-    let block = b.block;
-    let defaultPos = b.defaultPos;
-
-    for (let row = 0; row < block.length; row++) {
-        let blockY = defaultPos["y"] + row;
-        for (let col = 0; col < block[row].length; col++) {
-            let blockX = defaultPos["x"] + col;
+    for (let row = 0; row < b.block.length; row++) {
+        let blockY = b.defaultPos["y"] + row;
+        for (let col = 0; col < b.block[row].length; col++) {
+            let blockX = b.defaultPos["x"] + col;
 
             // Save the top-left coor for rotation purposes
             if (row == 0 && col == 0) {
@@ -350,7 +356,7 @@ function placeBlockDefaultPos(blockInfo, gridInfo) {
             }
 
             // Only place non-zero values
-            if (block[row][col] !== 0) { 
+            if (b.block[row][col] !== 0) { 
                 g.grid[blockY][blockX] = b.typeName;
                 saveCoorToArr(b.currentPos, blockX, blockY);
             }
@@ -429,11 +435,8 @@ function updateCoor(coor, direction) {
 function placeGhost(blockInfo, gridInfo, direction) {
     let b = blockInfo, g = gridInfo;
 
-    // Reset ghostPos; NOTE: I did not do ghostPos = [] b/c original would not be affected
-    b.ghostPos = [];
-    console.log(b.currentPos);
+    b.ghostPos = [];    // Reset ghostPos
     deepCopy(b.currentPos).forEach(coor => b.ghostPos.push(coor));
-    // let direction = "down";
 
     calculateGhostPos(b, g, direction);
     displayGhost(b.ghostPos, b.typeName);
@@ -558,21 +561,16 @@ function groupByAxis(axis, pos) {
 }
 
 function processOutermostCoors(axis, groupedAxisDict, direction) {
-    if (axis == "y" && direction == "right") {
-        return Object.keys(groupedAxisDict).map(y => {
-            return groupedAxisDict[y].reduce((coorAcc, coorObj) => coorObj.x > coorAcc.x ? coorObj : coorAcc);
-        });
+    let lookupTableForReduce = {
+        "y-right": (coorAcc, coorObj) => coorObj.x > coorAcc.x ? coorObj : coorAcc,
+        "y-left": (coorAcc, coorObj) => coorObj.x < coorAcc.x ? coorObj : coorAcc,
+        "x-down": (coorAcc, coorObj) => coorObj.y > coorAcc.y ? coorObj : coorAcc
     }
 
-    if (axis == "y" && direction == "left") {
-        return Object.keys(groupedAxisDict).map(y => {
-            return groupedAxisDict[y].reduce((coorAcc, coorObj) => coorObj.x < coorAcc.x ? coorObj : coorAcc);
-        });
-    }
-
-    if (axis == "x" && direction == "down") {
-        return Object.keys(groupedAxisDict).map(x => {
-            return groupedAxisDict[x].reduce((coorAcc, coorObj) => coorObj.y > coorAcc.y ? coorObj : coorAcc);
+    let key = `${axis}-${direction}`;
+    if (key in lookupTableForReduce) {
+        return Object.keys(groupedAxisDict).map(axisArg => {
+            return groupedAxisDict[axisArg].reduce(lookupTableForReduce[key]);
         });
     }
 }
@@ -590,7 +588,7 @@ function clearLine(gridInfo) {
     updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
 }
 
-// // SECTION: Moving block
+// SECTION: Moving block
 function enableCtrls(blockInfo, gridInfo, keyState) {
     let b = blockInfo, g = gridInfo;
     let keys = ["ArrowDown", "ArrowLeft", "ArrowRight", " ", "ArrowUp"];
@@ -608,6 +606,7 @@ function enableCtrls(blockInfo, gridInfo, keyState) {
             if (checkCollision(b.currentPos, g.rows, g.cols, g.grid, "down") == true) {
                 if (g.counter < g.maxCounter) {
                     g.counter += 1;
+                    console.log(g.counter);
                 }
                 else {
                     placeBlock(b.ghostPos, b.currentPos, b.typeName, g.grid);
@@ -631,6 +630,7 @@ function enableCtrls(blockInfo, gridInfo, keyState) {
     })
 }
 
+// CHECKPOINT
 function gameLoop(blockInfo, gridInfo, keyState) {
     let b = blockInfo, g = gridInfo;
     let now = Date.now();
@@ -649,6 +649,7 @@ function gameLoop(blockInfo, gridInfo, keyState) {
             g.lastAutoDropTime = now;  // Reset drop timer after auto drop
             g.counter = 0;
 
+            console.log("block placed");
             setTimeout(gameLoop, 42, b, g, keyState);
             return;
         } 
@@ -707,7 +708,6 @@ function gameLoop(blockInfo, gridInfo, keyState) {
 
     setTimeout(gameLoop, 42, b, g, keyState);
 }
-
 
 function getDirection(keyState) {
     if (keyState["ArrowDown"] == true) {

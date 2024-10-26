@@ -31,3 +31,4 @@ gridInfo.counter = 0;
 I will only pass in the whole obj if I have a lot of parameters needed for that function or I need to reassign the original object property rather than a local reference/copy to it
 
 I will only shorten the obj name inside function (let b = blockInfo) if I use it frequently inside that function 
+
