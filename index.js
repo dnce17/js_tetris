@@ -603,17 +603,8 @@ function enableCtrls(blockInfo, gridInfo, keyState) {
         if (e.key == "ArrowUp") {
             rotateBlock(blockInfo, gridInfo);
 
-            if (checkCollision(b.currentPos, g.rows, g.cols, g.grid, "down") == true) {
-                if (g.counter < g.maxCounter) {
-                    g.counter += 1;
-                    console.log(g.counter);
-                }
-                else {
-                    placeBlock(b.ghostPos, b.currentPos, b.typeName, g.grid);
-                    g.lastAutoDropTime = Date.now();
-                    g.counter = 0;
-                }
-
+            // "true" = counter reached over limit and auto-place occurred
+            if (handleAutoPlaceCounter(b, g) == true) {
                 g.lastAutoDropTime = Date.now();
             }
         }
@@ -630,7 +621,6 @@ function enableCtrls(blockInfo, gridInfo, keyState) {
     })
 }
 
-// CHECKPOINT
 function gameLoop(blockInfo, gridInfo, keyState) {
     let b = blockInfo, g = gridInfo;
     let now = Date.now();
@@ -638,9 +628,39 @@ function gameLoop(blockInfo, gridInfo, keyState) {
     // Get user input direction, can be "down", "left", "right", or null
     let direction = getDirection(keyState);
 
-    // Handle auto-drop if enough time has passed
+    // Handle auto drop movement if enough time has passed
+    let autoDropResult = handleAutoDrop(b, g, direction, now);
+    if (autoDropResult.result.toLowerCase() == "auto_placed") {
+        return "exit gameLoop";
+    }
+
+    direction = autoDropResult.updatedDirection;
+
+    // Handle manual or auto movement
+    handleMovement(b, g, now, direction);
+    setTimeout(gameLoop, 42, b, g, keyState);
+}
+
+function adjustCounter(gridInfo) {
+    let g = gridInfo;
+
+    if (g.counter < g.maxCounter) {
+        g.counter += 1;
+    }
+    else {
+        g.counter = 0;
+    }
+
+    console.log(g.counter);
+    return g.counter;
+}
+
+function handleAutoDrop(blockInfo, gridInfo, direction, now) {
+    let b = blockInfo, g = gridInfo;
+
+    // Handle auto drop movement if enough time has passed
     if (now - g.lastAutoDropTime >= g.dropInterval) {
-        direction = "down"; // Force auto-drop down if enough time has passed
+        direction = "down"; // To force auto-drop down if enough time has passed
         
         // Check if the block collides after auto-drop
         let collision = checkCollision(deepCopy(b.currentPos), g.rows, g.cols, g.grid, direction);
@@ -651,62 +671,76 @@ function gameLoop(blockInfo, gridInfo, keyState) {
 
             console.log("block placed");
             setTimeout(gameLoop, 42, b, g, keyState);
-            return;
+            return {result: "auto_placed", updatedDirection: direction};
         } 
         else {
             g.lastAutoDropTime = now;  // Reset timer after moving down automatically
         }
     }
 
-    // Handle manual movement
+    return {result: "not_auto_placed", updatedDirection: direction};
+}
+
+function handleMovement(blockInfo, gridInfo, now, direction = null) {
+    let b = blockInfo, g = gridInfo;
     if (direction != null) {
         if (direction === "down") {
-            // Manual down movement
-            let collision = checkCollision(b.currentPos, g.rows, g.cols, g.grid, direction);
-            if (collision == false) {
-                // Move the block down
-                removeOldBlock(b.currentPos, g.grid);
-                updatePieceCoors(b.currentPos, b.typeName, b.topLeftCoor, g.grid, direction);
-                updateBoard(g.grid, g.rows, g.fillerRows);
-                placeGhost(b, g, "down");
-                g.lastAutoDropTime = now;  // Reset the auto-drop timer after manual drop
-            } 
+            // Handle down movement
+            processMovement(b, g, direction, now);
         } 
         else {
-            now = Date.now();
-
             if (now - g.lastMoveTime > 42) {
                 // Handle left/right movement
-                if (checkCollision(b.currentPos, g.rows, g.cols, g.grid, direction) == false) {
-                    removeOldBlock(b.currentPos, g.grid);
-                    updatePieceCoors(b.currentPos, b.typeName, b.topLeftCoor, g.grid, direction);
-                    updateBoard(g.grid, g.rows, g.fillerRows);
-                    placeGhost(b, g, "down");
-                }
+                processMovement(b, g, direction, now);
 
                 // Reset timer if block is touching obstacle below it; Counter avoids timer
                 // NOTE: This "down" direction if statement is added here instead of the direction == "down" if statement b/c 
                 // the point is for the block to MOVE LEFT/RIGHT to allow more than 1 sec (aka when counter reaches 30) 
                 // before auto placing, assuming there's an obstacle below it
-                if (checkCollision(b.currentPos, g.rows, g.cols, g.grid, "down") == true) {
-                    if (g.counter < g.maxCounter) {
-                        g.counter += 1;
-                        console.log(g.counter);
-                    }
-                    else {
-                        placeBlock(b.ghostPos, b.currentPos, b.typeName, g.grid);
-                        g.counter = 0;
-                    }
-
-                    g.lastAutoDropTime = now;
+                if (handleAutoPlaceCounter(b, g) == true) {
+                    g.lastAutoDropTime = Date.now();
                 }
             }
 
             g.lastMoveTime = now;
         }
     }
+}
 
-    setTimeout(gameLoop, 42, b, g, keyState);
+// AKA user uses arrow keys
+function processMovement(blockInfo, gridInfo, direction, dateNow) {
+    let b = blockInfo, g = gridInfo;
+    let collision = checkCollision(b.currentPos, g.rows, g.cols, g.grid, direction);
+
+    if (collision == false) {
+        removeOldBlock(b.currentPos, g.grid);
+        updatePieceCoors(b.currentPos, b.typeName, b.topLeftCoor, g.grid, direction);
+        updateBoard(g.grid, g.rows, g.fillerRows);
+        placeGhost(b, g, "down");
+
+        // Reset auto-drop timer after manual drop ONLY if moved down (doesn't matter if manual or auto)
+        if (direction == "down") {
+            // Must reset only if collision == false
+            // else block will not set indefinitely if user holds down arrow forever
+            g.lastAutoDropTime = dateNow; 
+        }
+    } 
+}
+
+// Updates counter and places block if counter reaches max and resets to 0
+function handleAutoPlaceCounter(blockInfo, gridInfo) {
+    let b = blockInfo, g = gridInfo;
+    if (checkCollision(b.currentPos, g.rows, g.cols, g.grid, "down") == true) {
+        if (adjustCounter(g) == 0) {
+            placeBlock(b.ghostPos, b.currentPos, b.typeName, g.grid);
+        }
+        
+        // Placed here and not inside above if statement b/c lastAutoDropTime
+        // needs to reset regardless if counter becomes 0 or not
+        return true;
+    }
+
+    return false;
 }
 
 function getDirection(keyState) {
