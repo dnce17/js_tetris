@@ -32,3 +32,11 @@ I will only pass in the whole obj if I have a lot of parameters needed for that 
 
 I will only shorten the obj name inside function (let b = blockInfo) if I use it frequently inside that function 
 
+
+
+Most recent change 11/13/24
+--> fixed ghost overlapping on block
+--> to do, the losing condition
+--> cleaned up html
+--> when debugging, be aware that console.log might give you the appearence of the wrong change in pos b/c even if the line showing you the coor is at 375, it will still show you the final change of the coor at line 408 even tho console.log is at 375
+--> losing condition from ghost + px overlap

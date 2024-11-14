@@ -375,14 +375,48 @@ function placeBlock(ghostPos, blockPos, typeName, grid) {
     // Remove block being controlled
     removeOldBlock(blockPos, grid);
 
+    // Saved to compare against defaultPos to check losing condition
+    let placedCoors = [];
+
     // Place block based on ghostPos
     for (let coor of ghostPos) {
         grid[coor.y][coor.x] = typeName;
+        placedCoors.push({"x": coor.x, "y": coor.y});
     }
 
     // New block appears
     clearLine(gridInfo);
     placeBlockDefaultPos(blockInfo, gridInfo);
+
+    // Check if default block overlap with any set block. If so, player LOSE
+    if (checkLose(placedCoors, blockInfo) == true) {
+        console.log("player lost");
+    }
+}
+
+function checkLose(placedCoors, blockInfo) {
+    let b = blockInfo;
+
+    for (let row = 0; row < b.block.length; row++) {
+        let blockY = b.defaultPos["y"] + row;
+        for (let col = 0; col < b.block[row].length; col++) {
+            let blockX = b.defaultPos["x"] + col;
+
+            // Only check non-zero values
+            if (b.block[row][col] != 0) { 
+                for (let coor of placedCoors) {
+                    if (coor.x == blockX && coor.y == blockY) {
+                        console.log(`Overlap ghost + px: ${coor.x}, ${coor.y}`)
+
+                        // Player loses
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 function removeOldBlock(blockPos, grid) {
