@@ -1,6 +1,11 @@
 import { blockTypes, clockwiseKickData} from "./blocks_n_kicks.js"
 import { createEleWithCls, deepCopy } from "./helpers.js"
 
+const player = {
+    lost: false,
+    pause: false,
+}
+
 const gridInfo = {
     rows: 15,
     cols: 10,
@@ -10,6 +15,8 @@ const gridInfo = {
     // Block State Properties
     dropInterval: 1000,  
     lastAutoDropTime: Date.now(),  // Track the time of the last drop
+    pausedDropTimer: null,
+
     counter: 0, // Allows > 1 second to finalize block placement if obstacle is below and user moves left/right; max: 30
     maxCounter: 30,
 
@@ -36,10 +43,10 @@ const blockInfo = {
 }; 
 
 const keyState = {
-    "ArrowDown": null,
-    "ArrowLeft": null,
-    "ArrowRight": null,
-    " ": null
+    "ArrowDown": false,
+    "ArrowLeft": false,
+    "ArrowRight": false,
+    " ": false
 };
 
 // SECTION: Grid (dynamically made)
@@ -389,7 +396,8 @@ function placeBlock(ghostPos, blockPos, typeName, grid) {
     placeBlockDefaultPos(blockInfo, gridInfo);
 
     // Check if default block overlap with any set block. If so, player LOSE
-    if (checkLose(placedCoors, blockInfo) == true) {
+    if (checkLose(placedCoors, blockInfo, player) == true) {
+        player.lost = true;
         console.log("player lost");
     }
 }
@@ -623,23 +631,38 @@ function clearLine(gridInfo) {
 }
 
 // SECTION: Moving block
-function enableCtrls(blockInfo, gridInfo, keyState) {
-    let b = blockInfo, g = gridInfo;
+function enableCtrls(blockInfo, gridInfo, keyState, player) {
+    let b = blockInfo, g = gridInfo, p = player;
     let keys = ["ArrowDown", "ArrowLeft", "ArrowRight", " ", "ArrowUp"];
 
     window.addEventListener("keydown", function(e) {
-        if (e.key == " ") {
-            placeBlock(b.ghostPos, b.currentPos, b.typeName, g.grid);
-            g.lastAutoDropTime = Date.now();
-            g.counter = 0;
+        if (e.key == "p") {
+            if (p.pause == false) {
+                // Save how much time has passed since the last drop
+                g.pausedDropTimer = Date.now() - g.lastAutoDropTime;
+                p.pause = true;
+            }
+            else {
+                // Adjust lastAutoDropTime to remain the same prior to pausing
+                g.lastAutoDropTime = Date.now() - g.pausedDropTimer;
+                p.pause = false;
+            }
         }
 
-        if (e.key == "ArrowUp") {
-            rotateBlock(blockInfo, gridInfo);
-
-            // "true" = counter reached over limit and auto-place occurred
-            if (handleAutoPlaceCounter(b, g) == true) {
+        if (p.pause == false) {
+            if (e.key == " ") {
+                placeBlock(b.ghostPos, b.currentPos, b.typeName, g.grid);
                 g.lastAutoDropTime = Date.now();
+                g.counter = 0;
+            }
+    
+            if (e.key == "ArrowUp") {
+                rotateBlock(blockInfo, gridInfo);
+    
+                // "true" = counter reached over limit and auto-place occurred
+                if (handleAutoPlaceCounter(b, g) == true) {
+                    g.lastAutoDropTime = Date.now();
+                }
             }
         }
 
@@ -655,24 +678,30 @@ function enableCtrls(blockInfo, gridInfo, keyState) {
     })
 }
 
-function gameLoop(blockInfo, gridInfo, keyState) {
-    let b = blockInfo, g = gridInfo;
-    let now = Date.now();
+function gameLoop(blockInfo, gridInfo, keyState, player) {
+    let b = blockInfo, g = gridInfo, p = player;
+    if (p.pause == false) {
+        let now = Date.now();
+        
+        // Get user input direction, can be "down", "left", "right", or null
+        let direction = getDirection(keyState);
     
-    // Get user input direction, can be "down", "left", "right", or null
-    let direction = getDirection(keyState);
-
-    // Handle auto drop movement if enough time has passed
-    let autoDropResult = handleAutoDrop(b, g, direction, now);
-    if (autoDropResult.result.toLowerCase() == "auto_placed") {
-        return "exit gameLoop";
+        // Handle auto drop movement if enough time has passed
+        let autoDropResult = handleAutoDrop(b, g, direction, now);
+        if (autoDropResult.result.toLowerCase() == "auto_placed") {
+            return "exit gameLoop";
+        }
+    
+        direction = autoDropResult.updatedDirection;
+    
+        // Handle manual or auto movement
+        handleMovement(b, g, now, direction);
+    }
+    else {
+        console.log("player paused");
     }
 
-    direction = autoDropResult.updatedDirection;
-
-    // Handle manual or auto movement
-    handleMovement(b, g, now, direction);
-    setTimeout(gameLoop, 42, b, g, keyState);
+    setTimeout(gameLoop, 42, b, g, keyState, player);
 }
 
 function adjustCounter(gridInfo) {
@@ -704,7 +733,7 @@ function handleAutoDrop(blockInfo, gridInfo, direction, now) {
             g.counter = 0;
 
             console.log("block placed");
-            setTimeout(gameLoop, 42, b, g, keyState);
+            setTimeout(gameLoop, 42, b, g, keyState, player);
             return {result: "auto_placed", updatedDirection: direction};
         } 
         else {
@@ -791,13 +820,13 @@ function getDirection(keyState) {
     return null;
 }
 
-function executeGame(blockInfo, gridInfo, keyState) {
+function executeGame(blockInfo, gridInfo, keyState, player) {
     let b = blockInfo, g = gridInfo;
 
     createGrid(g.grid, g.rows, g.cols);
     placeBlockDefaultPos(b, g);
-    enableCtrls(b, g, keyState);
-    gameLoop(blockInfo, gridInfo, keyState);
+    enableCtrls(b, g, keyState, player);
+    gameLoop(b, g, keyState, player);
 }
 
-executeGame(blockInfo, gridInfo, keyState);
+executeGame(blockInfo, gridInfo, keyState, player);

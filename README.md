@@ -34,9 +34,9 @@ I will only shorten the obj name inside function (let b = blockInfo) if I use it
 
 
 
-Most recent change 11/13/24
---> fixed ghost overlapping on block
---> to do, the losing condition
---> cleaned up html
+Most recent change 11/14/24
+--> altering gameLoop to allow pausing
+    - to do: remove event listeners who pause, but add back when resume
+    - When you have pause, you pretty much have the lost screen down; just don't allow resuming
+
 --> when debugging, be aware that console.log might give you the appearence of the wrong change in pos b/c even if the line showing you the coor is at 375, it will still show you the final change of the coor at line 408 even tho console.log is at 375
---> losing condition from ghost + px overlap
