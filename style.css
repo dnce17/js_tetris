@@ -11,21 +11,37 @@ body {
 }
 
 .hidden {
-    /* visibility: hidden; */
-    opacity: 0.5;
+    visibility: hidden;
+
+    /* Test use */
+    /* opacity: 0.5; */
 }
 
 .center {
     position: absolute;
-    top: 50%;
+    top: 45%;
     left: 50%;
-    transform: translate(-50%, -50%)
+    transform: translate(-50%, -50%);
+}
+
+
+.btn {
+    font-size: 1.5rem;
+    display: block;
+    margin-left: 1rem;
+    margin-top: 1rem;
+}
+
+.msg {
+    width: 100%;
+    text-align: center;
+    font-size: 3rem;
+    transform: translate(-50%, -150%);
+    z-index: 99;
 }
 
 .ghost {
-    /* background-color: rgba(0, 0, 0, 0.5); */
     opacity: 0.3;
-    /* BUG: ghost is in front of block when overlap */
 }
 
 .px {
@@ -34,9 +50,8 @@ body {
     height: 48px;
     background-color: black;
 
-    /* TEST USE */
-    /* color: yellow;
-    padding-top: 20px; */
+    /* Prevents ghost from overlapping on block */
+    opacity: 1;
 }
 
 /* Create board */
@@ -78,16 +93,3 @@ body {
 .J { background-color: pink; }
 .O { background-color: yellow; }
 .I { background-color: aqua; }
-
-/* TEST USE */
-.test-direction {
-    font-size: 24px;
-}
-
-/* .cleared {
-    background-color: brown;
-} */
-
-.closed {
-    background-color: aqua;
-}
