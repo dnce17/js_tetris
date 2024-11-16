@@ -35,8 +35,38 @@ I will only shorten the obj name inside function (let b = blockInfo) if I use it
 
 
 Most recent change 11/14/24
---> altering gameLoop to allow pausing
-    - to do: remove event listeners who pause, but add back when resume
-    - When you have pause, you pretty much have the lost screen down; just don't allow resuming
+--> allow pausing
 
 --> when debugging, be aware that console.log might give you the appearence of the wrong change in pos b/c even if the line showing you the coor is at 375, it will still show you the final change of the coor at line 408 even tho console.log is at 375
+
+function executeGame(blockInfo, gridInfo, keyState, player) {
+    let b = blockInfo, g = gridInfo, p = player;
+
+    createGrid(g.grid, g.rows, g.cols);
+    placeBlockDefaultPos(b, g);
+    enableCtrls(b, g, keyState, p);
+    gameLoop(b, g, keyState, p);
+}
+
+function restartGame(blockInfo, gridInfo, player) {
+    let b = blockInfo, g = gridInfo, p = player;
+
+    createGrid(g.grid, g.rows, g.cols);
+    placeBlockDefaultPos(b, g);
+
+    p.lost = false;
+    p.pause = false;  
+    
+    g.lastAutoDropTime = Date.now();
+    g.counter = 0;
+
+    b.bag = Object.keys(blockTypes());
+
+    console.log(p.pause);
+    console.log(p.lost);
+
+}
+
+Explanation: The main reason I only run createGrid(g.grid, g.rows, g.cols) + placeBlockDefaultPos(b, g) in restartGame func is b/c they are run one and one funcs. The effects of enableCtrls(b, g, keyState, p) + gameLoop(b, g, keyState, p) persist; the ctrls from the latter is still active and the gameLoop is constantly cycling with setTimeout, so recalling them would cause issues. Recall gameLoop causes major slowdown with arrow keys.
+
+.blur() removes focus from btn click, so if you press spacebar, you avoid activating the button again

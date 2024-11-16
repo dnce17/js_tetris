@@ -11,14 +11,25 @@ body {
 }
 
 .hidden {
-    opacity: 0.5;
+    /* Test use */
+    /* opacity: 0.5; */
+
+    visibility: hidden;
 }
 
 .center {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%)
+    transform: translate(-50%, -50%);
+}
+
+.msg {
+    width: 100%;
+    text-align: center;
+    font-size: 3rem;
+    transform: translate(-50%, -150%);
+    z-index: 99;
 }
 
 .ghost {

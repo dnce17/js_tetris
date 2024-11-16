@@ -49,8 +49,26 @@ const keyState = {
     " ": false
 };
 
+function adjustMsgVisibility(text, toggle=true, cls="hidden") {
+    let msg = document.querySelector(".msg");
+
+    if (toggle == true) {
+        msg.classList.toggle(cls);
+    }
+    else {
+        // Prevents flashing msg if this func used in game loops
+        if (msg.classList.contains(cls) == true) {
+            msg.classList.remove(cls);
+        }
+    }
+
+    msg.innerText = text;
+}
+
 // SECTION: Grid (dynamically made)
 function createGrid(grid, totalRows, totalCols) {
+    grid.length = 0;
+
     for (let row = 0; row < totalRows; row++) {
         let rowArr = [];
         for (let col = 0; col < totalCols; col++) {
@@ -634,34 +652,44 @@ function clearLine(gridInfo) {
 function enableCtrls(blockInfo, gridInfo, keyState, player) {
     let b = blockInfo, g = gridInfo, p = player;
     let keys = ["ArrowDown", "ArrowLeft", "ArrowRight", " ", "ArrowUp"];
+    let startBtn = document.querySelector(".start-btn");
+    let restartBtn = document.querySelector(".restart-btn");
 
     window.addEventListener("keydown", function(e) {
-        if (e.key == "p") {
-            if (p.pause == false) {
-                // Save how much time has passed since the last drop
-                g.pausedDropTimer = Date.now() - g.lastAutoDropTime;
-                p.pause = true;
-            }
-            else {
-                // Adjust lastAutoDropTime to remain the same prior to pausing
-                g.lastAutoDropTime = Date.now() - g.pausedDropTimer;
-                p.pause = false;
-            }
-        }
+        if (p.lost == false) {
+            if (e.key == "p") {
+    
+                // Pause
+                if (p.pause == false) {
+                    // Save how much time has passed since the last drop
+                    g.pausedDropTimer = Date.now() - g.lastAutoDropTime;
+                    p.pause = true;
 
-        if (p.pause == false) {
-            if (e.key == " ") {
-                placeBlock(b.ghostPos, b.currentPos, b.typeName, g.grid);
-                g.lastAutoDropTime = Date.now();
-                g.counter = 0;
+                    adjustMsgVisibility("Paused");
+                }
+                // Unpause
+                else {
+                    // Adjust lastAutoDropTime to remain the same prior to pausing
+                    g.lastAutoDropTime = Date.now() - g.pausedDropTimer;
+                    p.pause = false;
+                    adjustMsgVisibility("");
+                }
             }
     
-            if (e.key == "ArrowUp") {
-                rotateBlock(blockInfo, gridInfo);
-    
-                // "true" = counter reached over limit and auto-place occurred
-                if (handleAutoPlaceCounter(b, g) == true) {
+            if (p.pause == false) {
+                if (e.key == " ") {
+                    placeBlock(b.ghostPos, b.currentPos, b.typeName, g.grid);
                     g.lastAutoDropTime = Date.now();
+                    g.counter = 0;
+                }
+        
+                if (e.key == "ArrowUp") {
+                    rotateBlock(blockInfo, gridInfo);
+        
+                    // "true" = counter reached over limit and auto-place occurred
+                    if (handleAutoPlaceCounter(b, g) == true) {
+                        g.lastAutoDropTime = Date.now();
+                    }
                 }
             }
         }
@@ -675,12 +703,25 @@ function enableCtrls(blockInfo, gridInfo, keyState, player) {
         if (keys.includes(e.key)) {
             keyState[e.key] = false;
         }
-    })
+    });
+
+    startBtn.addEventListener("click", () => {
+        console.log("START");
+        executeGame(blockInfo, gridInfo, keyState, player);
+        startBtn.blur();
+        startBtn.disabled = true;
+    });
+
+    restartBtn.addEventListener("click", () => {
+        console.log("RESTART");
+        restartGame(b, g, p);
+        restartBtn.blur();
+    });
 }
 
 function gameLoop(blockInfo, gridInfo, keyState, player) {
     let b = blockInfo, g = gridInfo, p = player;
-    if (p.pause == false) {
+    if (p.pause == false && p.lost == false) {
         let now = Date.now();
         
         // Get user input direction, can be "down", "left", "right", or null
@@ -698,9 +739,12 @@ function gameLoop(blockInfo, gridInfo, keyState, player) {
         handleMovement(b, g, now, direction);
     }
     else {
-        console.log("player paused");
+        if (p.lost == true) {
+            adjustMsgVisibility("Game Over", false);
+        }
     }
 
+    // console.log("LOOP GOING");
     setTimeout(gameLoop, 42, b, g, keyState, player);
 }
 
@@ -821,12 +865,36 @@ function getDirection(keyState) {
 }
 
 function executeGame(blockInfo, gridInfo, keyState, player) {
-    let b = blockInfo, g = gridInfo;
+    let b = blockInfo, g = gridInfo, p = player;
+
+    placeBlockDefaultPos(b, g);
+    gameLoop(b, g, keyState, p);
+}
+
+function restartGame(blockInfo, gridInfo, player) {
+    let b = blockInfo, g = gridInfo, p = player;
+    // Values that need resetting 
+    resetVals(b, g, p);
 
     createGrid(g.grid, g.rows, g.cols);
     placeBlockDefaultPos(b, g);
-    enableCtrls(b, g, keyState, player);
-    gameLoop(b, g, keyState, player);
+    
 }
 
-executeGame(blockInfo, gridInfo, keyState, player);
+function resetVals(blockInfo, gridInfo, player) {
+    let b = blockInfo, g = gridInfo, p = player;
+    p.lost = false;
+    p.pause = false;  
+    
+    g.lastAutoDropTime = Date.now();
+    g.counter = 0;
+
+    b.bag = Object.keys(blockTypes());
+
+    adjustMsgVisibility("");
+}
+
+// Show board
+createGrid(gridInfo.grid, gridInfo.rows, gridInfo.cols);
+updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
+enableCtrls(blockInfo, gridInfo, keyState, player);
