@@ -298,7 +298,7 @@ function createBoard(board, grid, totalRows, totalFillerRows) {
     }
 
     // TEST USE
-    addGridLabels();
+    // addGridLabels();
 }
 
 function createRowsEle(currentRowIndex, totalFillerRows) {
@@ -416,7 +416,6 @@ function placeBlock(ghostPos, blockPos, typeName, grid) {
     // Check if default block overlap with any set block. If so, player LOSE
     if (checkLose(placedCoors, blockInfo, player) == true) {
         player.lost = true;
-        console.log("player lost");
     }
 }
 
@@ -432,9 +431,8 @@ function checkLose(placedCoors, blockInfo) {
             if (b.block[row][col] != 0) { 
                 for (let coor of placedCoors) {
                     if (coor.x == blockX && coor.y == blockY) {
-                        console.log(`Overlap ghost + px: ${coor.x}, ${coor.y}`)
-
                         // Player loses
+                        // console.log(`Overlap ghost + px: ${coor.x}, ${coor.y}`)
                         return true;
                     }
                 }
@@ -706,14 +704,12 @@ function enableCtrls(blockInfo, gridInfo, keyState, player) {
     });
 
     startBtn.addEventListener("click", () => {
-        console.log("START");
         executeGame(blockInfo, gridInfo, keyState, player);
         startBtn.blur();
         startBtn.disabled = true;
     });
 
     restartBtn.addEventListener("click", () => {
-        console.log("RESTART");
         restartGame(b, g, p);
         restartBtn.blur();
     });
@@ -758,7 +754,7 @@ function adjustCounter(gridInfo) {
         g.counter = 0;
     }
 
-    console.log(g.counter);
+    // console.log(g.counter);
     return g.counter;
 }
 
@@ -776,7 +772,6 @@ function handleAutoDrop(blockInfo, gridInfo, direction, now) {
             g.lastAutoDropTime = now;  // Reset drop timer after auto drop
             g.counter = 0;
 
-            console.log("block placed");
             setTimeout(gameLoop, 42, b, g, keyState, player);
             return {result: "auto_placed", updatedDirection: direction};
         } 

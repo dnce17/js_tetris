@@ -11,17 +11,25 @@ body {
 }
 
 .hidden {
+    visibility: hidden;
+
     /* Test use */
     /* opacity: 0.5; */
-
-    visibility: hidden;
 }
 
 .center {
     position: absolute;
-    top: 50%;
+    top: 45%;
     left: 50%;
     transform: translate(-50%, -50%);
+}
+
+
+.btn {
+    font-size: 1.5rem;
+    display: block;
+    margin-left: 1rem;
+    margin-top: 1rem;
 }
 
 .msg {
@@ -85,16 +93,3 @@ body {
 .J { background-color: pink; }
 .O { background-color: yellow; }
 .I { background-color: aqua; }
-
-/* TEST USE */
-.test-direction {
-    font-size: 24px;
-}
-
-/* .cleared {
-    background-color: brown;
-} */
-
-.closed {
-    background-color: aqua;
-}
