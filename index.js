@@ -15,12 +15,12 @@ const gridInfo = {
     // Block State Properties
     dropInterval: 1000,  
     lastAutoDropTime: Date.now(),  // Track the time of the last drop
-    pausedDropTimer: null,
+    pausedDropTimer: null,  // Saves how much time passed since last drop to ensure accurate auto drop after unpausing
 
     counter: 0, // Allows > 1 second to finalize block placement if obstacle is below and user moves left/right; max: 30
     maxCounter: 30,
 
-    // Movement delay to avoid too quick block movement
+    // Movement delay to avoid too quick block movement w/ arrow keys
     lastMoveTime: Date.now(),
     delay: 100
 }
@@ -586,7 +586,7 @@ function checkBlockCollision(pos, grid, direction) {
 function getOutermostCoors(pos, axis, direction) {
     // Gets the outermost x or y coors for block collision check, depending on directions
     // ****NOTE: there may be more than 1 outermost coors
-        // E.g. a block that has at least px in each row will have 3 outermost x
+        // E.g. a block that has at least 1 px in each row will have 3 outermost x
         // Get highest x of each unique y if right, lowest x if left, highest y if down
 
     // Grouped by either x or y
@@ -820,7 +820,7 @@ function processMovement(blockInfo, gridInfo, direction, dateNow) {
         updateBoard(g.grid, g.rows, g.fillerRows);
         placeGhost(b, g, "down");
 
-        // Reset auto-drop timer after manual drop ONLY if moved down (doesn't matter if manual or auto)
+        // Reset auto-drop timer after manual/auto drop ONLY if going down
         if (direction == "down") {
             // Must reset only if collision == false
             // else block will not set indefinitely if user holds down arrow forever
@@ -837,7 +837,7 @@ function handleAutoPlaceCounter(blockInfo, gridInfo) {
             placeBlock(b.ghostPos, b.currentPos, b.typeName, g.grid);
         }
         
-        // Placed here and not inside above if statement b/c lastAutoDropTime
+        // Placed here and not inside the above if statement b/c lastAutoDropTime
         // needs to reset regardless if counter becomes 0 or not
         return true;
     }
