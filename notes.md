@@ -2,7 +2,6 @@
 
 ### Future Changes
 * Break more functions down into smaller chunks 
-* Fix the board to have the traditional 20 rows, 10 columns. Adjust CSS as needed
 * Resetting counter when block rotates into an area that no longer has obstacle right below
 
 ### Board/Grid Mechanics

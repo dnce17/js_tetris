@@ -7,7 +7,7 @@ const player = {
 }
 
 const gridInfo = {
-    rows: 15,
+    rows: 21,  // 21 b/c the 1st row is invisible to account for rotation at top of grid
     cols: 10,
     fillerRows: 1,
     grid: [],

@@ -19,7 +19,7 @@ body {
 
 .center {
     position: absolute;
-    top: 45%;
+    top: 47%;
     left: 50%;
     transform: translate(-50%, -50%);
 }
@@ -46,8 +46,6 @@ body {
 
 .px {
     position: relative;
-    width: 48px;
-    height: 48px;
     background-color: black;
 
     /* Prevents ghost from overlapping on block */
@@ -73,8 +71,6 @@ body {
 .cell {
     border-top: 1px solid black;
     border-left: 1px solid black;
-    width: 48px;
-    height: 48px;
 }
 
 .cell:nth-child(10n) {
@@ -85,6 +81,11 @@ body {
     border-bottom: 1px solid black;
 }
 
+.cell, .px {
+    width: 2.35rem;
+    height: 2.35rem;
+}
+
 /* Tetrimino Colors */
 .T { background-color: purple; }
 .Z { background-color: red; }
@@ -93,3 +94,18 @@ body {
 .J { background-color: pink; }
 .O { background-color: yellow; }
 .I { background-color: aqua; }
+
+
+@media (max-height: 800px) {
+    .cell, .px {
+        width: 2rem;
+        height: 2rem;
+    }
+}
+
+@media (max-height: 600px) {
+    .cell, .px {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+}

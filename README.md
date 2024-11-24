@@ -4,7 +4,7 @@
 This is a browser-based Tetris game made with HTML, CSS, and vanilla JavaScript.
 
 ## Play the Game
-dnce17.github.io/js_tetris/
+[dnce17.github.io/js_tetris/](https://dnce17.github.io/js_tetris/)
 
 ## Controls
 * **Up** → Rotate
