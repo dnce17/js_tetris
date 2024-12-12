@@ -7,9 +7,10 @@ This is a browser-based Tetris game made with HTML, CSS, and vanilla JavaScript.
 [dnce17.github.io/js_tetris/](https://dnce17.github.io/js_tetris/)
 
 ## Controls
-* **Up** → Rotate
-* **Spacebar** → Place block
-* **P** → Pause
+* **Move block**: left, right, down arrow key
+* **Rotate block**: up arrow key
+* **Place block**: spacebar
+* **Pause/Unpause game**: P key
 
 ## Technologies Used 
 * HTML

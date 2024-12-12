@@ -889,7 +889,24 @@ function resetVals(blockInfo, gridInfo, player) {
     adjustMsgVisibility("");
 }
 
-// Show board
+function addToggleInstructionsEvt() {
+    let ctrlsBtn = document.querySelector(".ctrls-btn");
+    ctrlsBtn.addEventListener("click", () => {
+        let ctrlsDetail = document.querySelector(".ctrls-detail-ctnr");
+
+        ctrlsDetail.classList.toggle("hidden");
+        if (ctrlsDetail.classList.contains("hidden")) {
+            ctrlsBtn.innerText = "Show Controls";
+        }
+        else {
+            ctrlsBtn.innerText = "Hide Controls";
+        }
+    });
+}
+
+addToggleInstructionsEvt();
+
+// Show Board
 createGrid(gridInfo.grid, gridInfo.rows, gridInfo.cols);
 updateBoard(gridInfo.grid, gridInfo.rows, gridInfo.fillerRows);
 enableCtrls(blockInfo, gridInfo, keyState, player);

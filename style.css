@@ -24,11 +24,10 @@ body {
     transform: translate(-50%, -50%);
 }
 
-
 .btn {
-    font-size: 1.5rem;
+    font-size: 1rem;
     display: block;
-    margin-left: 1rem;
+    margin-left: 0.75rem;
     margin-top: 1rem;
 }
 
@@ -38,6 +37,23 @@ body {
     font-size: 3rem;
     transform: translate(-50%, -150%);
     z-index: 99;
+}
+
+.bold {
+    font-weight: bold;
+}
+
+.ctrls-detail-ctnr {
+    background-color: gray;
+    margin-left: 0.75rem;
+    margin-top: 1rem;
+    width: fit-content;
+    padding: 0.25rem;
+    border-radius: 15px;
+}
+
+.ctrls-detail {
+    color: white;
 }
 
 .ghost {
@@ -109,3 +125,10 @@ body {
         height: 1.5rem;
     }
 }
+
+@media (min-width: 700px) {
+    .btn {
+        font-size: 1.5rem;
+    }
+}
+
